@@ -110,6 +110,9 @@ function validerProfil(corps) {
     erreurs.push('Le code postal doit comporter 5 chiffres.');
   }
 
+  if (texte(corps.ville).length < 1) erreurs.push('La ville est obligatoire.');
+  if (texte(corps.ville).length > 100) erreurs.push('Le nom de ville est trop long (100 max).');
+
   // Pas de condition d'age : la plateforme est ouverte aux mineurs. On verifie
   // seulement que la date existe et reste plausible.
   const naissance = texte(corps.dateNaissance);
@@ -173,8 +176,12 @@ export default {
           );
           // 404 volontaire : le front s'en sert pour savoir qu'il doit
           // afficher le formulaire d'inscription.
+          //
+          // L'id n'est pas stocke dans le document — c'est la cle du document —
+          // mais le schema Profil le declare et le front en a besoin pour se
+          // reconnaitre dans l'annuaire. On le rajoute a la reponse.
           return profil
-            ? json(profil, 200, cors)
+            ? json({ id: utilisateur.sub, ...profil }, 200, cors)
             : json({ erreur: 'Profil inexistant.', inscriptionRequise: true }, 404, cors);
         }
 
@@ -200,13 +207,14 @@ export default {
               roles: ROLES.filter((r) => corps.roles.includes(r)),
               adressePostale: corps.adressePostale.trim(),
               codePostal: corps.codePostal.trim(),
+              ville: corps.ville.trim(),
               dateNaissance: corps.dateNaissance.trim(),
               photoUrl: typeof corps.photoUrl === 'string' ? corps.photoUrl : '',
               creeLe: existant?.creeLe || new Date().toISOString(),
               misAJourLe: new Date().toISOString(),
             },
           );
-          return json(profil, existant ? 200 : 201, cors);
+          return json({ id: utilisateur.sub, ...profil }, existant ? 200 : 201, cors);
         }
 
         return json({ erreur: 'Méthode non autorisée.' }, 405, cors);
@@ -218,14 +226,24 @@ export default {
         const tous = await listerCollection(jeton, env.FIREBASE_PROJECT_ID, 'utilisateurs');
         // Liste BLANCHE, et non liste noire : l'annuaire est lisible sans etre
         // connecte, donc tout champ ajoute au profil ne doit pas s'y retrouver
-        // par defaut. E-mail, adresse, code postal et date de naissance restent
-        // prives.
-        const publics = tous.map(({ id, prenom, nom, roles, photoUrl }) => ({
+        // par defaut.
+        //
+        // Ville et code postal y figurent volontairement : les objets se
+        // remettent en main propre, donc la localisation approximative est
+        // l'information utile de l'annuaire. On s'arrete la : l'adresse exacte,
+        // l'e-mail et la date de naissance restent prives.
+        //
+        // Les profils crees avant l'ajout du champ n'ont pas de ville ; on
+        // renvoie une chaine vide plutot qu'un trou, le front decide quoi
+        // afficher.
+        const publics = tous.map(({ id, prenom, nom, roles, photoUrl, codePostal, ville }) => ({
           id,
           prenom,
           nom,
           roles,
           photoUrl,
+          codePostal: codePostal || '',
+          ville: ville || '',
         }));
         return json({ utilisateurs: publics, total: publics.length }, 200, cors);
       }

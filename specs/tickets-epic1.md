@@ -173,7 +173,7 @@ Gérer l'identité et l'accès des utilisateurs à la plateforme de dons de mani
 ### Périmètre fonctionnel
 - Inscription et connexion via e-mail avec un "Lien magique".
 - Création du profil obligatoire pour les nouveaux utilisateurs après le clic sur le lien.
-- Champs du profil : nom, prénom, date de naissance, **rôles (donateur et/ou bénéficiaire, cumulables)**, adresse, code postal.
+- Champs du profil : nom, prénom, date de naissance, **rôles (donateur et/ou bénéficiaire, cumulables)**, adresse, code postal, ville.
 - Déconnexion.
 - Consultation des membres inscrits.
 - **Passerelle backend** : le front n'accède jamais à Firestore directement. Il présente son jeton d'identité, le Worker Cloudflare le vérifie, puis agit avec la clé de service.
@@ -200,21 +200,21 @@ En tant que nouveau visiteur, je veux m'inscrire via un lien magique envoyé par
 - L'utilisateur saisit son e-mail sur la page d'inscription.
 - Le système indique si l'adresse a déjà un compte, puis envoie le lien magique. **Le lien est le même dans les deux cas ; seul le message affiché diffère.**
 - L'utilisateur clique sur le lien dans sa boîte mail. Firebase crée le compte à la consommation du lien.
-- Il est redirigé vers un formulaire pour compléter son profil : nom, prénom, rôles (donateur et/ou bénéficiaire), adresse, code postal, date de naissance.
+- Il est redirigé vers un formulaire pour compléter son profil : nom, prénom, rôles (donateur et/ou bénéficiaire), adresse, code postal, ville, date de naissance.
 - Validation et redirection vers la page d'accueil en mode connecté.
 
 ### Critères d'acceptation
 - [ ] **CA1 (Happy Path) :** Le champ e-mail possède une validation syntaxique en temps réel. Un message de confirmation est affiché après l'envoi du lien.
-- [ ] **CA2 (Happy Path) :** Après avoir cliqué sur le lien, le formulaire d'inscription affiche bien les champs requis (nom, prénom, **rôles — plusieurs choix possibles**, adresse, code postal, date de naissance). La soumission crée le compte.
+- [ ] **CA2 (Happy Path) :** Après avoir cliqué sur le lien, le formulaire d'inscription affiche bien les champs requis (nom, prénom, **rôles — plusieurs choix possibles**, adresse, code postal, ville, date de naissance). La soumission crée le compte.
 - [ ] **CA3 (Erreur gérée) :** Si le format de l'e-mail est invalide, le bouton de soumission est bloqué et un message d'aide apparaît.
 - [ ] **CA4 (Erreur gérée) :** Si le lien magique est expiré, une page d'erreur propose de renvoyer un nouveau lien.
-- [ ] **CA5 (Erreur gérée) :** Si l'utilisateur n'est pas majeur, le bouton de soumission est bloqué et un message d'aide apparaît.
+- [x] ~~**CA5 (Erreur gérée) :** Si l'utilisateur n'est pas majeur, le bouton de soumission est bloqué et un message d'aide apparaît.~~ **Abandonné sur décision produit :** la plateforme s'adresse en priorité aux jeunes dans le besoin, mineurs compris. La date de naissance reste obligatoire et validée, mais sans seuil d'âge.
 - [ ] **CA6 (Erreur gérée) :** Les champs sont validés côté serveur, pas seulement dans le navigateur. Une requête forgée est rejetée en `422`.
 
 ### Spécifications techniques
 - **ST1 :** Implémentation de Firebase Auth avec _sendSignInLinkToEmail_.
 - **ST2 :** Validation et consommation du lien via _signInWithEmailLink_.
-- **ST3 :** À la complétion du profil, écriture d'un document dans la collection `utilisateurs` de Cloud Firestore **via le Worker** (`PUT /api/profil`), jamais depuis le front. Champs : `id`, `email`, `nom`, `prenom`, `photoUrl`, `adressePostale`, `codePostal`, `dateNaissance`, `roles[]`, `creeLe`, `misAJourLe`.
+- **ST3 :** À la complétion du profil, écriture d'un document dans la collection `utilisateurs` de Cloud Firestore **via le Worker** (`PUT /api/profil`), jamais depuis le front. Champs : `id`, `email`, `nom`, `prenom`, `photoUrl`, `adressePostale`, `codePostal`, `ville`, `dateNaissance`, `roles[]`, `creeLe`, `misAJourLe`.
 - **ST4 :** L'e-mail stocké est **repris du jeton d'identité vérifié, jamais du formulaire** : sinon n'importe qui pourrait s'enregistrer sous l'adresse d'un autre.
 
 ### Exclusions (Hors scope MVP)
@@ -260,25 +260,31 @@ En tant qu'utilisateur déjà inscrit (donateur, bénéficiaire, ou les deux), j
 
 ---
 
-# 🆕 [US-3] Consulter les membres inscrits
+# 🆕 [US-3] Consulter les membres inscrits — issue #9
+
+> **Cette copie reflète l'issue GitHub #9, qui fait foi.** Toute divergence se
+> corrige ici, pas sur GitHub.
 
 ***
 
 ### Titre
-En tant qu'utilisateur connecté, je veux voir qui est inscrit sur la plateforme, afin de me rassurer sur le fait que la communauté est réelle et active avant de proposer ou de demander un objet.
+Consulter la liste des membres inscrits depuis l'accueil
 
 ### Spécifications fonctionnelles
-**Contexte :** Sur une plateforme de dons entre inconnus, la confiance est le premier frein. Voir d'autres membres réels lève ce frein. C'est aussi une exigence explicite de la J2 : « inscription pas à pas **et** affichage des utilisateurs ».
+**Contexte :** Sur une plateforme de dons entre inconnus, la confiance est le premier frein. Voir d'autres membres réels lève ce frein. C'est également une exigence du POC pour prouver la remontée de données.
 **Happy Path :**
 - Une fois connecté et son profil complété, l'utilisateur arrive sur l'accueil.
-- L'accueil affiche la liste des membres inscrits avec leur prénom, nom et rôles.
-- Le compteur indique le nombre total d'inscrits.
+- L'accueil charge et affiche la liste des membres inscrits avec leur prénom, nom, rôles et adresse (ville/code postal).
+- Un compteur indique le nombre total d'inscrits.
 
 ### Critères d'acceptation
-- [ ] **CA1 (Happy Path) :** La liste affiche prénom, nom et rôles de chaque inscrit, avec le total.
-- [ ] **CA2 (Sécurité) :** Les adresses e-mail ne sont **jamais** exposées dans la réponse de l'API.
-- [ ] **CA3 (Cas limite) :** Si aucun membre n'est inscrit, un message explicite est affiché plutôt qu'une liste vide.
-- [ ] **CA4 (Erreur gérée) :** Si le chargement échoue, un message d'erreur est affiché sans casser le reste de l'accueil.
+- [x] **CA1 (Happy Path) :** La liste affiche prénom, nom, rôles et adresse (ville/code postal) de chaque inscrit, avec le total.
+- [x] **CA2 (Sécurité) :** Les adresses e-mail ne sont **jamais** exposées dans la réponse de l'API.
+- [x] **CA3 (Cas limite) :** Si la base ne contient que l'utilisateur actuel, un message l'informant qu'il est le premier (ou qu'il n'y a pas d'autres membres) s'affiche.
+- [x] **CA4 (Erreur gérée) :** Si le chargement échoue, un message d'erreur est affiché sans casser le reste de l'accueil.
+
+### Prérequis
+* Les profils doivent être créés en base via l'US (Inscription).
 
 ### Spécifications techniques
 - **ST1 :** `GET /api/utilisateurs` sur le Worker, qui lit la collection `utilisateurs` et retire le champ `email` avant de répondre.
@@ -287,6 +293,18 @@ En tant qu'utilisateur connecté, je veux voir qui est inscrit sur la plateforme
 - Pas de pagination ni de recherche dans l'annuaire.
 - Pas de fiche profil détaillée par membre.
 - Pas de photo dans la liste tant que le téléversement n'est pas fait.
+
+### Écart assumé par rapport à ST1
+
+ST1 décrit une **liste noire** (« retire le champ `email` »). Le Worker applique
+une **liste blanche** : il ne recopie que `id`, `prenom`, `nom`, `roles`,
+`photoUrl`, `codePostal` et `ville`.
+
+C'est plus strict, et cela satisfait CA2. Une liste noire exposerait
+`adressePostale` et `dateNaissance` — l'adresse du domicile et la date de
+naissance de chaque inscrit, sur un annuaire lisible sans être connecté. Et
+chaque champ ajouté au profil plus tard s'y retrouverait automatiquement.
+**CA2 est la fin, ST1 n'était qu'un moyen : on garde la fin.**
 
 ***
 
@@ -375,15 +393,15 @@ Aucune tâche ne couvrait le backend, alors que c'est l'architecture imposée pa
 
 ***
 
-- [ ] Champs : nom, prénom, **date de naissance**, rôles, adresse, **code postal**.
-- [ ] **Bloquer la soumission si l'utilisateur n'est pas majeur**, avec message d'aide → **CA5**.
+- [ ] Champs : nom, prénom, **date de naissance**, rôles, adresse, **code postal**, **ville**.
+- [x] ~~**Bloquer la soumission si l'utilisateur n'est pas majeur**~~ → **CA5 abandonné.** Valider la date de naissance (existe, pas dans le futur, moins de 120 ans) **sans condition d'âge**.
 - [ ] Rôles en **cases à cocher** (cumulables), au moins un obligatoire.
 - [ ] L'e-mail n'est pas saisissable : il est repris du jeton vérifié.
 - [ ] Afficher le formulaire uniquement si `GET /api/profil` répond `404`.
 - [ ] Rediriger vers l'accueil connecté après validation.
 - [ ] Afficher l'emplacement de la photo, sans téléversement (hors scope MVP).
 
-**Valide :** US-1 CA2, CA5
+**Valide :** US-1 CA2
 
 ***
 
@@ -407,10 +425,13 @@ Aucune tâche ne couvrait le backend, alors que c'est l'architecture imposée pa
 
 ***
 
-- [ ] `GET /api/utilisateurs` — sans exposer les adresses e-mail.
-- [ ] Liste sur l'accueil : initiale, prénom, nom, rôles.
-- [ ] Afficher le nombre total d'inscrits.
-- [ ] Gérer les états de chargement, de liste vide et d'erreur.
+- [x] `GET /api/utilisateurs` — liste blanche, sans e-mail, adresse exacte ni date de naissance.
+- [x] Liste sur l'accueil : initiale, prénom, nom, rôles, ville et code postal.
+- [x] Masquer la ligne de localisation pour les profils antérieurs au champ `ville`.
+- [x] Afficher le nombre total d'inscrits.
+- [x] Message dédié quand l'utilisateur est le seul inscrit → **CA3**.
+- [x] Gérer les états de chargement et d'erreur.
+- [x] **Pas de champ de recherche** : exclu du MVP par l'US-3.
 
 **Valide :** US-3 CA1, CA2, CA3, CA4, ST1
 
@@ -435,9 +456,9 @@ Ce qui diffère est **uniquement le message affiché** — d'où `statut-email`.
 | Critère | Tâche | État du code |
 |---|---|---|
 | US-1 CA1, CA3 | TASK-2 (#5) | ✅ |
-| US-1 CA2 | TASK-6 | ⚠️ manque date de naissance et code postal |
-| US-1 CA4 | TASK-7 | ❌ |
-| US-1 CA5 | TASK-6 | ❌ |
+| US-1 CA2 | TASK-6 | ✅ nom, prénom, rôles, adresse, code postal, ville, date de naissance |
+| US-1 CA4 | TASK-7 | ✅ écran dédié, distingue lien expiré et lien déjà consommé |
+| US-1 CA5 | TASK-6 | ⛔ **abandonné** — voir ci-dessous |
 | US-1 CA6, ST3, ST4 | TASK-5 | ✅ |
 | US-1 ST1 | TASK-3 (#6) | ✅ |
 | US-1 ST2 | TASK-4 (#7) | ✅ |
@@ -445,9 +466,18 @@ Ce qui diffère est **uniquement le message affiché** — d'où `statut-email`.
 | US-2 CA2, CA3, CA5, ST1 | TASK-4 (#7) | ✅ |
 | US-2 CA4 (déconnexion) | TASK-4 (#7) | ✅ |
 | US-2 ST2 | TASK-3 (#6) | ✅ |
-| US-3 CA1 → CA4, ST1 | TASK-8 | ✅ |
+| US-3 CA1 → CA4, ST1 | TASK-8 | ✅ (ST1 durci en liste blanche, cf. US-3) |
 | EPIC-0 | TASK-1, 9, 10, 11, 12 | ✅ |
 
-**US-2 et US-3 validables. US-1 non**, tant que TASK-6 et TASK-7 ne sont pas
-terminées : il manque la date de naissance, le code postal, le contrôle de
-majorité et l'écran de lien expiré.
+**US-1, US-2 et US-3 sont couvertes par le code.**
+
+### Décision : pas de condition d'âge (US-1 CA5)
+
+CA5 exigeait de bloquer la soumission pour un utilisateur mineur. **Ce critère
+est abandonné sur décision produit** : la plateforme vise en priorité les jeunes
+dans le besoin, dont des lycéens et des étudiants mineurs. Les exclure du don
+contredirait la raison d'être du projet.
+
+Le champ `dateNaissance` reste obligatoire et validé — existence, pas de date
+future, moins de 120 ans — mais aucun seuil d'âge n'est appliqué, ni côté
+formulaire ni côté Worker.

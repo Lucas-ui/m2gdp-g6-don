@@ -98,9 +98,13 @@ paths:
       tags: ["Profils"]
       summary: "📇 Annuaire public des inscrits"
       description: >
-        Liste blanche : seuls `id`, `prenom`, `nom`, `roles` et `photoUrl` sont
-        renvoyés. E-mail, adresse, code postal et date de naissance restent
-        privés — tout champ ajouté au profil est exclu par défaut.
+        Liste blanche : seuls `id`, `prenom`, `nom`, `roles`, `photoUrl`,
+        `codePostal` et `ville` sont renvoyés. La localisation approximative est
+        publiée volontairement — les objets se remettent en main propre, c'est
+        l'information utile de l'annuaire. E-mail, adresse exacte et date de
+        naissance restent privés ; tout autre champ ajouté au profil est exclu
+        par défaut. Les comptes créés avant l'ajout de `ville` renvoient une
+        chaîne vide.
       responses:
         "200":
           description: "Liste"
@@ -200,11 +204,15 @@ components:
             l'ordre de saisie.
         adressePostale:
           type: string
-          description: "Sert à calculer la proximité 📍 — privée, jamais exposée dans l'annuaire"
+          description: "Adresse exacte 🏠 — privée, jamais exposée dans l'annuaire"
         codePostal:
           type: string
           pattern: "^[0-9]{5}$"
-          description: "Code postal 📍 — privé, jamais exposé dans l'annuaire"
+          description: "Code postal 📍 — public : porte la proximité, affiché dans l'annuaire"
+        ville:
+          type: string
+          maxLength: 100
+          description: "Ville 🏙️ — publique, affichée dans l'annuaire à côté du code postal"
         dateNaissance:
           type: string
           format: date
@@ -215,11 +223,12 @@ components:
 
     ProfilSoumis:
       type: object
-      required: [nom, prenom, roles, adressePostale, codePostal, dateNaissance]
+      required: [nom, prenom, roles, adressePostale, codePostal, ville, dateNaissance]
       properties:
         nom: { type: string, minLength: 1, maxLength: 80 }
         prenom: { type: string, minLength: 1, maxLength: 80 }
         codePostal: { type: string, pattern: "^[0-9]{5}$" }
+        ville: { type: string, minLength: 1, maxLength: 100 }
         dateNaissance:
           type: string
           format: date

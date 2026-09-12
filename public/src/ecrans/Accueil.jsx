@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Users } from 'lucide-react';
+import { LogOut, MapPin, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { listerUtilisateurs } from '@/lib/api.js';
@@ -19,11 +19,22 @@ function libelleRoles(roles = []) {
 }
 
 /**
+ * « 69002 Lyon ». Renvoie une chaine vide si le profil ne porte ni l'un ni
+ * l'autre : les comptes crees avant l'ajout de la ville n'en ont pas, et mieux
+ * vaut masquer la ligne que d'afficher un lieu a moitie vide.
+ */
+function libelleLieu({ codePostal, ville }) {
+  return [codePostal, ville].filter(Boolean).join(' ');
+}
+
+/**
  * Ecran d'arrivee une fois connecte et inscrit.
  *
  * L'annuaire des inscrits n'est pas du decor : la J2 demande « l'inscription
  * pas a pas ET l'affichage des utilisateurs ». C'est la preuve visible que le
  * profil a bien ete ecrit dans Firestore par le Worker.
+ *
+ * Pas de champ de recherche : l'US-3 (issue #9) l'exclut du MVP.
  */
 export default function Accueil({ profil }) {
   const [utilisateurs, setUtilisateurs] = useState(null);
@@ -32,6 +43,12 @@ export default function Accueil({ profil }) {
   useEffect(() => {
     listerUtilisateurs().then(setUtilisateurs).catch((e) => setErreur(e.message));
   }, []);
+
+  // CA3 : connecte, on figure forcement dans l'annuaire — la liste n'est donc
+  // jamais vide. Le cas limite reel est « je suis le seul inscrit », et il
+  // merite d'etre dit plutot que de laisser une carte isolee sans explication.
+  const seulInscrit =
+    utilisateurs?.length === 1 && utilisateurs[0].id === profil.id;
 
   return (
     <section className="space-y-6">
@@ -71,6 +88,17 @@ export default function Accueil({ profil }) {
           {!erreur && !utilisateurs && (
             <p className="text-sm text-muted-foreground">Chargement…</p>
           )}
+
+          {/* CA3 : la communaute se resume a soi-meme. On le dit clairement,
+              et on affiche quand meme sa propre carte pour que le compteur et
+              la liste restent coherents. */}
+          {seulInscrit && (
+            <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+              Vous êtes le premier inscrit ! Il n’y a pas encore d’autres
+              membres — revenez bientôt, ou parlez-en autour de vous.
+            </p>
+          )}
+
           {utilisateurs && utilisateurs.length === 0 && (
             <p className="text-sm text-muted-foreground">Aucun inscrit pour le moment.</p>
           )}
@@ -91,6 +119,12 @@ export default function Accueil({ profil }) {
                     <span className="block truncate text-xs text-muted-foreground">
                       {libelleRoles(u.roles)}
                     </span>
+                    {libelleLieu(u) && (
+                      <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{libelleLieu(u)}</span>
+                      </span>
+                    )}
                   </span>
                 </li>
               ))}

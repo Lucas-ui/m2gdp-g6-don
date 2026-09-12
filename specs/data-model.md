@@ -24,6 +24,7 @@ classDiagram
         +string photoUrl
         +string adressePostale
         +string codePostal
+        +string ville
         +date dateNaissance
         +string[] roles
         +date creeLe
@@ -80,7 +81,11 @@ classDiagram
 - Le **statut** d'une Demande : `en_attente`, `acceptee`, `refusee`.
 - La **Conversation** lie donateur et bénéficiaire pour convenir du retrait.
 - Le **codePostal** porte la proximité : les objets se récupèrent en main
-  propre, donc la distance est un critère de recherche déterminant.
+  propre, donc la distance est un critère de recherche déterminant. Avec la
+  **ville**, c'est la seule partie de l'adresse rendue publique — elle figure
+  sur chaque carte de l'annuaire. L'**adressePostale**, elle,
+  ne sort jamais du profil : elle ne servira qu'au moment de convenir d'un
+  retrait, entre les deux personnes concernées.
 
 ## Énumérations
 
@@ -95,5 +100,26 @@ classDiagram
 
 - **Aucun champ monétaire.** Pas de prix, pas de montant d'enchère, pas de
   date de clôture d'enchère. Le don est gratuit et sans échéance imposée.
+  ⚠️ **Point rouvert par le client** — voir ci-dessous.
 - **Aucune cause caritative bénéficiaire.** Le don va directement d'une
   personne à une autre, sans association intermédiaire ni reversement.
+
+## ⚠️ Décisions en attente
+
+Ce modèle n'est pas figé. Le client (Quang TRAN) a rouvert deux points par
+e-mail au PO le **11/09/2026** :
+
+1. **Paiement symbolique fixé par le donateur.** Motif : donner le sentiment
+   d'un échange et limiter les abus. « Ce serait bien de l'avoir. » Cela
+   contredit directement la ligne « Aucun champ monétaire » ci-dessus et
+   ajouterait un montant au `Don`.
+2. **Charge de gestion du donateur.** Consulter et valider les profils des
+   demandeurs alourdit l'effort côté donateur. Alternative évoquée pour
+   l'alléger : créneau de retrait fixé, questions publiques, acceptation
+   automatique — au prix de la dimension solidarité portée par la `motivation`.
+
+Le client harmonise par ailleurs la difficulté entre les projets des différents
+groupes : le périmètre peut donc bouger indépendamment de nos choix.
+
+**Rien n'est tranché** : ces points attendent une décision du PO. Tant qu'elle
+n'est pas prise, le modèle ci-dessus reste la référence.
