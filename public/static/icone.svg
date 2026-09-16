@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DON">
-  <rect width="512" height="512" rx="112" fill="#1a7f6b"/>
-  <path fill="#ffffff" d="M256 400c-8 0-15-3-21-8-52-46-99-88-99-142 0-38 30-68 68-68 21 0 40 10 52 25 12-15 31-25 52-25 38 0 68 30 68 68 0 54-47 96-99 142-6 5-13 8-21 8z"/>
+<!--
+  Miniature Doneo : tuile violette, D blanc dont la contrepoince est un coeur.
+  Le D est construit geometriquement (fut droit + demi-cercle de rayon 138),
+  le coeur est evide en `evenodd` pour laisser passer le violet de la tuile :
+  la forme reste juste quelle que soit la couleur du fond.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Donéo">
+  <rect width="512" height="512" rx="112" fill="#9B4DDB"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M141 118h92a138 138 0 0 1 0 276h-92Z"/>
+  <path
+    fill="#9B4DDB"
+    transform="translate(171.6 174.45) scale(6.7)"
+    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35Z"/>
 </svg>

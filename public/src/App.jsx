@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
-import { Input } from "@/components/ui/input.jsx";
-import { Label } from "@/components/ui/label.jsx";
+import Champ from "@/components/Champ.jsx";
+import Logo from "@/components/Logo.jsx";
 import Connexion from "@/ecrans/Connexion.jsx";
 import Inscription from "@/ecrans/Inscription.jsx";
 import Accueil from "@/ecrans/Accueil.jsx";
@@ -13,6 +13,15 @@ import {
   finaliserConnexion,
   surChangementAuth,
 } from "@/lib/auth.js";
+
+function Chargement({ children }) {
+  return (
+    <p className="flex items-center gap-2.5 pt-10 text-sm text-muted-foreground">
+      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
 
 /**
  * Aiguillage du POC J2.
@@ -34,9 +43,16 @@ export default function App() {
   const [lienInvalide, setLienInvalide] = useState(null); // { expire: bool }
   const [erreur, setErreur] = useState(null);
 
+  // Le code du lien ne sert qu'une fois. En developpement, StrictMode monte le
+  // composant deux fois : sans ce garde-fou, les deux effets consomment le meme
+  // code, l'un reussit, l'autre recoit `invalid-action-code` — et l'ecran
+  // « lien invalide » s'affiche alors que la connexion a abouti.
+  const lienTraite = useRef(false);
+
   // 1. Retour de lien magique : a traiter avant tout le reste.
   useEffect(() => {
-    if (!estRetourDeLien()) return;
+    if (lienTraite.current || !estRetourDeLien()) return;
+    lienTraite.current = true;
     finaliserConnexion().catch((e) => {
       if (e.message === "EMAIL_MANQUANT") setEmailRedemande(true);
       else if (e.message === "LIEN_INVALIDE")
@@ -76,80 +92,77 @@ export default function App() {
     }
   }
 
-  return (
-    <div className="doneo-shell">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-6 py-7 sm:px-8">
-        <div className="mb-10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Heart
-              className="size-5 fill-current text-primary"
-              aria-hidden="true"
-            />
-            <span className="doneo-brand">DONÉO</span>
-          </div>
-          <span className="text-[0.6rem] font-bold tracking-[0.16em] text-muted-foreground">
-            DONNER AUTREMENT
-          </span>
-        </div>
+  // La connexion et l'accueil portent deja le logo dans leur propre mise en
+  // page : leur ajouter l'en-tete de la coque le ferait apparaitre deux fois.
+  let avecEnTete = true;
+  let ecran;
 
-        <main className="flex-1">
+  if (lienInvalide) {
+    ecran = <LienInvalide expire={lienInvalide.expire} />;
+  } else if (emailRedemande) {
+    // Lien ouvert sur un autre appareil que celui de la demande.
+    ecran = (
+      <form onSubmit={confirmerEmail} className="space-y-4">
+        <h1 className="doneo-titre text-[2rem] leading-tight">
+          Confirmez votre e-mail
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground text-pretty">
+          Ce lien a été demandé depuis un autre appareil. Saisissez l’adresse
+          utilisée pour terminer la connexion.
+        </p>
+        <Champ
+          id="confirmation"
+          etiquette="Adresse e-mail"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="prenom@email.com"
+          value={saisieEmail}
+          onChange={(e) => setSaisieEmail(e.target.value)}
+        />
+        <Button
+          type="submit"
+          variant="doneo"
+          size="pilule"
+          className="w-full"
+          disabled={!saisieEmail}>
+          <Heart className="size-5 fill-current" aria-hidden="true" />
+          Confirmer
+        </Button>
+      </form>
+    );
+  } else if (utilisateur === undefined) {
+    ecran = <Chargement>Chargement…</Chargement>;
+  } else if (utilisateur === null) {
+    ecran = <Connexion />;
+    avecEnTete = false;
+  } else if (profil === undefined) {
+    ecran = <Chargement>Chargement de votre profil…</Chargement>;
+  } else if (profil === null) {
+    ecran = <Inscription email={utilisateur.email} surTermine={setProfil} />;
+  } else {
+    ecran = <Accueil profil={profil} />;
+    avecEnTete = false;
+  }
+
+  return (
+    <div className="doneo-coque">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-6 py-6 sm:px-8">
+        {avecEnTete && (
+          <div className="mb-8">
+            <Logo />
+          </div>
+        )}
+
+        <main className="flex flex-1 flex-col">
           {erreur && (
             <p
               role="alert"
-              className="mb-4 rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">
+              className="mb-4 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive">
               {erreur}
             </p>
           )}
-
-          {/* Lien perime ou deja consomme : cas nominal, ecran dedie. */}
-          {lienInvalide ? (
-            <LienInvalide expire={lienInvalide.expire} />
-          ) : /* Lien ouvert sur un autre appareil que celui de la demande. */
-          emailRedemande ? (
-            <form onSubmit={confirmerEmail} className="space-y-4">
-              <h1 className="doneo-title text-3xl tracking-tight">
-                Confirmez votre e-mail
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Ce lien a été demandé depuis un autre appareil. Saisissez
-                l’adresse utilisée pour terminer la connexion.
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="confirmation">E-mail</Label>
-                <Input
-                  id="confirmation"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  className="doneo-input"
-                  value={saisieEmail}
-                  onChange={(e) => setSaisieEmail(e.target.value)}
-                />
-              </div>
-              <Button
-                type="submit"
-                className="doneo-primary-button w-full"
-                disabled={!saisieEmail}>
-                Confirmer
-              </Button>
-            </form>
-          ) : utilisateur === undefined ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              Chargement…
-            </p>
-          ) : utilisateur === null ? (
-            <Connexion />
-          ) : profil === undefined ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              Chargement de votre profil…
-            </p>
-          ) : profil === null ? (
-            <Inscription email={utilisateur.email} surTermine={setProfil} />
-          ) : (
-            <Accueil profil={profil} />
-          )}
+          {ecran}
         </main>
       </div>
     </div>

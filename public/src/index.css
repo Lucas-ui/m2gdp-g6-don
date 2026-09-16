@@ -1,38 +1,73 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@700;800;900&display=swap");
+/* Asgard n'existe pas en webfont : Fredoka est la substitution la plus proche
+   (grotesque geometrique arrondie, meme densite, meme rondeur des contrepoinces).
+   A remplacer par la vraie fonte le jour ou la licence est disponible. */
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --radius: 1.15rem;
-  --doneo-violet: #9b4ddb;
-  --doneo-lavande: #e7d6f5;
-  --doneo-rose: #e23c8e;
-  --doneo-ardoise: #2f4f5c;
-  --doneo-lilas: #f7f2fc;
-  --background: var(--doneo-lilas);
-  --foreground: var(--doneo-ardoise);
+  --radius: 1.25rem;
+
+  /* ---- Charte Doneo : valeurs exactes du brand book ------------------ */
+  --violet: #9b4ddb; /* identite et actions */
+  /* Declinaison foncee du violet de marque. Deux emplois :
+     - le survol des boutons, que la charte montre plus soutenu que l'etat normal ;
+     - le texte violet de petite taille, le violet de marque ne donnant que
+       4,28:1 sur le lilas (insuffisant) la ou celui-ci monte a 5,6:1. */
+  --violet-fonce: #8538c6;
+  --lavande: #e7d6f5; /* aplats doux */
+  --rose: #e23c8e; /* accent d'emotion, jamais une erreur */
+  --ardoise: #2f4f5c; /* texte, traits d'illustration */
+  --lilas: #f7f2fc; /* fond d'application */
+
+  /* Tons d'accompagnement : categories, cartes, illustrations. */
+  --menthe: #bfe9e1;
+  --pervenche: #c6caf6;
+  --citron: #edf5b3;
+
+  /* Teinte intermediaire violet/lavande, utilisee par les illustrations. */
+  --lavande-soutenue: #c6a3ec;
+
+  /* ---- Jetons shadcn -------------------------------------------------
+     En hex, et non en triplets OKLCH nus : `--primary: 0.57 0.22 292`
+     produit `background-color: 0.57 0.22 292`, que le navigateur rejette.
+     C'est ce qui rendait toute la charte invisible. */
+  --background: var(--lilas);
+  --foreground: var(--ardoise);
   --card: #ffffff;
-  --card-foreground: var(--doneo-ardoise);
+  --card-foreground: var(--ardoise);
   --popover: #ffffff;
-  --popover-foreground: var(--doneo-ardoise);
-  --primary: 0.57 0.22 292;
-  --primary-foreground: 0.99 0.01 300;
-  --secondary: 0.91 0.045 186;
-  --secondary-foreground: 0.29 0.07 220;
-  --muted: 0.93 0.035 300;
-  --muted-foreground: 0.48 0.045 255;
-  --accent: 0.88 0.09 292;
-  --accent-foreground: 0.32 0.1 292;
-  --destructive: 0.62 0.2 25;
-  --border: 0.88 0.045 292;
-  --input: 0.88 0.045 292;
-  --ring: 0.65 0.18 292;
+  --popover-foreground: var(--ardoise);
+  --primary: var(--violet);
+  --primary-foreground: #ffffff;
+  --secondary: var(--lavande);
+  --secondary-foreground: #6b2ea0;
+  --muted: #f1e9fa;
+  --muted-foreground: #6b6880;
+  --accent: var(--lavande);
+  --accent-foreground: #6b2ea0;
+  /* Rouge, et non le rose de la marque : la charte reserve le rose a
+     l'emotion et lui interdit de signaler une erreur. */
+  --destructive: #d92d4e;
+  --destructive-foreground: #ffffff;
+  --succes: #2e8b6e;
+  --alerte: #b8860b;
+  --border: #e8dbf6;
+  --input: #e8dbf6;
+  --ring: var(--violet);
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-titre: "Fredoka", "Trebuchet MS", sans-serif;
+
+  /* Convention shadcn : on ne redefinit que sm..xl. `rounded-2xl` et
+     `rounded-3xl` gardent les valeurs de Tailwind (16 et 24 px) — les
+     surcharger ici arrondissait les pastilles jusqu'au cercle. */
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -48,79 +83,141 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Couleurs de marque exposees en utilitaires : bg-menthe, text-rose... */
+  --color-violet: var(--violet);
+  --color-violet-fonce: var(--violet-fonce);
+  --color-lavande: var(--lavande);
+  --color-rose: var(--rose);
+  --color-ardoise: var(--ardoise);
+  --color-lilas: var(--lilas);
+  --color-menthe: var(--menthe);
+  --color-pervenche: var(--pervenche);
+  --color-citron: var(--citron);
+  --color-succes: var(--succes);
+  --color-alerte: var(--alerte);
 }
 
 @layer base {
   * {
     border-color: var(--border);
   }
+
   body {
     min-width: 320px;
-    background: radial-gradient(
-      circle at 50% -10%,
-      #ffffff 0,
-      var(--doneo-lilas) 42rem
-    );
+    background: var(--lilas);
     color: var(--foreground);
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
     /* encoches et barre de gestes des mobiles */
     padding: env(safe-area-inset-top) env(safe-area-inset-right)
       env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
+
+  /* Les titres portent la personnalite de la marque, Inter assure la
+     lisibilite : c'est la repartition prevue par la charte. */
+  h1,
+  h2,
+  h3 {
+    font-family: "Fredoka", "Trebuchet MS", sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer components {
-  .doneo-shell {
+  .doneo-coque {
     min-height: 100dvh;
-    background: linear-gradient(
-      180deg,
-      #fff 0%,
-      var(--doneo-lilas) 38%,
-      #f1e5fa 100%
-    );
+    background: var(--lilas);
   }
 
-  .doneo-brand {
-    color: var(--doneo-violet);
-    font-family: "Nunito", "Asgard", sans-serif;
-    font-size: 1.35rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
+  .doneo-titre {
+    color: var(--ardoise);
+    font-family: "Fredoka", "Trebuchet MS", sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
 
-  .doneo-title {
-    color: var(--doneo-ardoise);
-    font-family: "Nunito", "Asgard", sans-serif;
-    font-weight: 900;
+  /* Intitule de champ : petites capitales espacees, comme les maquettes. */
+  .doneo-etiquette {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
-  .doneo-logo {
+  .doneo-champ {
+    height: 3.5rem;
+    border: 1.5px solid rgb(155 77 219 / 18%);
+    border-radius: 1.25rem;
+    background: #fff;
+    padding-inline: 1.125rem;
+    font-size: 1rem;
+    color: var(--ardoise);
+    box-shadow: none;
+  }
+
+  .doneo-champ:focus-visible {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 4px rgb(155 77 219 / 16%);
+    outline: none;
+  }
+
+  .doneo-bouton {
+    min-height: 3.5rem;
+    border-radius: 1.25rem;
+    background: var(--violet);
+    color: #fff;
+    font-family: "Fredoka", "Trebuchet MS", sans-serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+    box-shadow: 0 8px 20px -6px rgb(155 77 219 / 50%);
+    transition: transform 0.12s ease;
+  }
+
+  .doneo-bouton:hover:not(:disabled) {
+    background: var(--violet);
+    transform: translateY(-1px);
+  }
+
+  .doneo-bouton:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .doneo-bouton:disabled {
+    background: #d9d3e2;
+    color: #8d8899;
+    box-shadow: none;
+  }
+
+  .doneo-bouton-secondaire {
+    min-height: 3.5rem;
+    border: 1.5px solid var(--violet);
+    border-radius: 1.25rem;
+    background: transparent;
+    color: var(--violet-fonce);
+    font-family: "Fredoka", "Trebuchet MS", sans-serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .doneo-carte {
+    border-radius: 1.5rem;
+    border: 1px solid rgb(155 77 219 / 10%);
+    background: #fff;
+    box-shadow: 0 10px 26px -12px rgb(155 77 219 / 16%);
+  }
+
+  /* Pastille d'illustration : le rond lavande des maquettes. */
+  .doneo-pastille {
     display: grid;
     place-items: center;
-    width: 4.25rem;
-    height: 4.25rem;
-    border-radius: 1.55rem;
-    color: var(--doneo-ardoise);
-    background: var(--doneo-lavande);
-    box-shadow: 0 0.8rem 1.8rem rgb(155 77 219 / 18%);
-  }
-
-  .doneo-input {
-    height: 3rem;
-    border-color: transparent;
-    border-radius: 1rem;
-    background: #fff;
-    box-shadow: 0 0.35rem 1rem rgb(47 79 92 / 7%);
-  }
-
-  .doneo-primary-button {
-    min-height: 3rem;
-    border-radius: 1rem;
-    background: var(--doneo-violet);
-    box-shadow: 0 0.7rem 1.2rem rgb(155 77 219 / 24%);
-    font-weight: 800;
+    border-radius: 999px;
+    background: var(--lavande);
   }
 }

@@ -18,9 +18,18 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // Les quatre etats du bouton dans la charte Doneo : normal, survol,
+        // secondaire, desactive. Le gris du desactive est impose plutot que
+        // l'opacite de shadcn, qui laisserait un violet delave.
+        doneo:
+          "bg-primary text-primary-foreground font-titre font-semibold shadow-[0_8px_20px_-6px_rgb(155_77_219/50%)] hover:bg-violet-fonce hover:-translate-y-px active:translate-y-px disabled:bg-[#d9d3e2] disabled:text-[#8d8899] disabled:shadow-none disabled:opacity-100",
+        doneoSecondaire:
+          "border-[1.5px] border-primary bg-transparent text-violet-fonce font-titre font-semibold hover:border-violet-fonce hover:bg-primary/5 hover:-translate-y-px active:translate-y-px",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        // Grande pilule pleine largeur des maquettes mobiles.
+        pilule: "h-14 rounded-[1.25rem] px-6 text-lg has-[>svg]:px-5",
         xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
