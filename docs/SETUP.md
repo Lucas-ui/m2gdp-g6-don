@@ -1,4 +1,4 @@
-# Setup — m2gdp-g6-don
+# Setup — Donéo
 
 Ordre d'installation et de configuration (Prérequis Agentic Coding J2).
 
@@ -13,37 +13,37 @@ Ordre d'installation et de configuration (Prérequis Agentic Coding J2).
 
 ## 2. Firebase — ✅ FAIT
 
-Projet : **`projet-bon-debarras`** (numéro `134185101825`).
+Projet : **`doneo-3561b`** (numéro `134185101825`).
 
 | Élément | État | Détail |
 |---------|------|--------|
 | Authentication (email) | ✅ | *Email link (passwordless)* actif |
 | Firestore | ✅ | région `eur3` |
 | Realtime Database | ✅ | `europe-west1` |
-| Hosting — landing | ✅ déployé | https://projet-bon-debarras.web.app |
-| Hosting — app | ✅ déployé | https://projet-bon-debarras-app.web.app |
+| Hosting — landing | ✅ déployé | https://doneo-vitrine.web.app |
+| Hosting — app | ✅ déployé | https://doneo.web.app |
 | Lien magique (passwordless) | ✅ | vérifié par envoi réel le 09/09/2026 |
-| App web enregistrée | ✅ | `m2gdp-g6-don` |
+| App web enregistrée | ✅ | `doneo-api` |
 | Service account key | ✅ | JSON à la racine, **git-ignoré** — à déplacer hors du dépôt |
 
 Config client (publique) : [`public/src/lib/firebase.js`](../public/src/lib/firebase.js).
 Targets Hosting : déjà dans [`.firebaserc`](../.firebaserc). Si un poste neuf ne
 les connaît pas :
 ```bash
-firebase target:apply hosting landing projet-bon-debarras
-firebase target:apply hosting app projet-bon-debarras-app
+firebase target:apply hosting landing doneo-3561b
+firebase target:apply hosting app doneo-3561b-app
 ```
 
 ## 3. Cloudflare — ✅ FAIT
 
 Compte : `af6e99118eacb7dae1f71bab594ad0ed`.
-Worker en ligne : **https://m2gdp-g6-don.guillaume-lorel.workers.dev**
+Worker en ligne : **https://doneo-api.guillaume-lorel.workers.dev**
 
 | Ressource | État |
 |-----------|------|
 | `wrangler login` | ✅ |
-| D1 `m2gdp-g6-don-sessions` | ✅ région WEUR, `database_id` dans `wrangler.toml` |
-| R2 `m2gdp-g6-don-fichiers` | ✅ créé le 09/09/2026 |
+| D1 `doneo-sessions` | ✅ région WEUR, `database_id` dans `wrangler.toml` |
+| R2 `doneo-fichiers` | ✅ créé le 09/09/2026 |
 | Worker déployé | ✅ version `85f953d9` |
 | Secrets | ✅ `FIREBASE_SERVICE_ACCOUNT` + `FIREBASE_API_KEY` |
 
@@ -52,7 +52,7 @@ pipant le contenu plutôt qu'en le collant, pour qu'il ne reste pas dans
 l'historique du terminal :
 
 ```bash
-cat ../projet-bon-debarras-firebase-adminsdk-fbsvc-*.json \
+cat ../doneo-3561b-firebase-adminsdk-fbsvc-*.json \
   | wrangler secret put FIREBASE_SERVICE_ACCOUNT
 printf '%s' "<api-key>" | wrangler secret put FIREBASE_API_KEY
 ```
@@ -110,8 +110,8 @@ Le déploiement Firebase fonctionne **sans `firebase login`** en pointant la cl�
 service, ce qui est pratique en CI ou depuis un poste non authentifié :
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="$PWD/projet-bon-debarras-firebase-adminsdk-*.json"
-firebase deploy --only hosting --project projet-bon-debarras --non-interactive
+export GOOGLE_APPLICATION_CREDENTIALS="$PWD/doneo-3561b-firebase-adminsdk-*.json"
+firebase deploy --only hosting --project doneo-3561b --non-interactive
 ```
 
 ## 6. Agentic Coding — Skills et MCP ✅
@@ -153,7 +153,7 @@ redécouvrir en J4.
 
 Healthcheck du worker :
 ```bash
-curl https://m2gdp-g6-don.guillaume-lorel.workers.dev/api/health
+curl https://doneo-api.guillaume-lorel.workers.dev/api/health
 ```
-Réponse attendue : `{"status":"ok","service":"m2gdp-g6-don","ts":...}`.
+Réponse attendue : `{"status":"ok","service":"doneo-api","ts":...}`.
 Vérifié le 09/09/2026 : HTTP 200 en ~0,7 s.

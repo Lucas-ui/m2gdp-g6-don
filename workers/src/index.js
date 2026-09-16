@@ -1,5 +1,5 @@
 /**
- * Worker Cloudflare — Backend m2gdp-g6-don (dons entre particuliers)
+ * Worker Cloudflare — Backend Donéo (don caritatif par la vente d'objets)
  *
  * Passerelle entre le front et les services auto-geres. Le front n'ecrit
  * jamais dans Firestore directement : il presente un jeton d'identite Firebase,
@@ -99,11 +99,24 @@ function validerProfil(corps) {
   } else if (new Set(roles).size !== roles.length) {
     erreurs.push('Un rôle est présent en double.');
   }
-  if (texte(corps.adressePostale).length < 5) {
-    erreurs.push("L'adresse postale est obligatoire (5 caractères minimum).");
+  // Adresse decomposee, et non une chaine unique : cela permet de publier
+  // codePostal + ville dans l'annuaire sans jamais laisser sortir le numero et
+  // la rue. Voir specs/data-model.md, « Adresse a deux niveaux ».
+  if (texte(corps.numeroRue).length < 1) {
+    erreurs.push('Le numéro de rue est obligatoire.');
+  } else if (texte(corps.numeroRue).length > 10) {
+    erreurs.push('Le numéro de rue est trop long (10 max).');
   }
-  if (texte(corps.adressePostale).length > 200) {
-    erreurs.push("L'adresse postale est trop longue (200 max).");
+
+  if (texte(corps.rue).length < 2) {
+    erreurs.push('La rue est obligatoire.');
+  } else if (texte(corps.rue).length > 150) {
+    erreurs.push('Le nom de rue est trop long (150 max).');
+  }
+
+  // Facultatif : on ne controle que la longueur s'il est renseigne.
+  if (texte(corps.complementAdresse).length > 100) {
+    erreurs.push("Le complément d'adresse est trop long (100 max).");
   }
 
   if (!/^\d{5}$/.test(texte(corps.codePostal))) {
@@ -145,7 +158,7 @@ export default {
     try {
       /* --- Healthcheck ------------------------------------------------ */
       if (pathname === '/api/health') {
-        return json({ status: 'ok', service: 'm2gdp-g6-don', ts: Date.now() }, 200, cors);
+        return json({ status: 'ok', service: 'doneo-api', ts: Date.now() }, 200, cors);
       }
 
       /* --- L'email a-t-il un compte ? --------------------------------- */
@@ -205,7 +218,14 @@ export default {
               // Ordre normalise, pour que l'affichage soit stable d'un profil
               // a l'autre quel que soit l'ordre de cochage.
               roles: ROLES.filter((r) => corps.roles.includes(r)),
-              adressePostale: corps.adressePostale.trim(),
+              numeroRue: corps.numeroRue.trim(),
+              rue: corps.rue.trim(),
+              // Facultatif : absent du corps, il devient une chaine vide plutot
+              // qu'un undefined, que Firestore refuserait.
+              complementAdresse:
+                typeof corps.complementAdresse === 'string'
+                  ? corps.complementAdresse.trim()
+                  : '',
               codePostal: corps.codePostal.trim(),
               ville: corps.ville.trim(),
               dateNaissance: corps.dateNaissance.trim(),

@@ -1,26 +1,28 @@
-name = "m2gdp-g6-don"
+name = "doneo-api"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
-# CORS : restreindre l'accès au worker au domaine du front (voir agents.md).
+# CORS : restreindre l'acces au worker au domaine du front (voir agents.md).
 # Le code autorise en plus localhost, sinon le dev en local est impossible.
 [vars]
-ALLOWED_ORIGIN = "https://projet-bon-debarras-app.web.app"
-# Identifiant du projet Firebase : sert à valider l'audience des jetons.
-# Public, contrairement à la clé de service qui reste dans les secrets.
-FIREBASE_PROJECT_ID = "projet-bon-debarras"
+ALLOWED_ORIGIN = "https://doneo.web.app"
+# Identifiant du projet Firebase : sert a valider l'audience des jetons.
+# Public, contrairement a la cle de service qui reste dans les secrets.
+FIREBASE_PROJECT_ID = "doneo-3561b"
 
-# Base D1 (sessions, SQL) — créée le 09/09/2026, région WEUR
+# Base D1 (sessions, SQL) — creee le 16/09/2026, region WEUR.
+# Le binding reste DB_SESSIONS : c'est le nom lu par le code, il ne suit pas
+# celui de la ressource.
 [[d1_databases]]
 binding = "DB_SESSIONS"
-database_name = "m2gdp-g6-don-sessions"
-database_id = "982e2d7f-4610-4c0e-a28e-ff850ac588ee"
+database_name = "doneo-sessions"
+database_id = "83153df8-eded-4ac6-b35b-749f7efe3a9c"
 
-# Bucket R2 (fichiers / photos)
+# Bucket R2 (fichiers / photos) — cree le 16/09/2026.
 [[r2_buckets]]
 binding = "BUCKET_FICHIERS"
-bucket_name = "m2gdp-g6-don-fichiers"
+bucket_name = "doneo-fichiers"
 
-# Secrets à définir via `wrangler secret put` (JAMAIS en clair ici) :
-#   FIREBASE_SERVICE_ACCOUNT   -> contenu de la service account key
+# Secrets a definir via `wrangler secret put` (JAMAIS en clair ici) :
+#   FIREBASE_SERVICE_ACCOUNT   -> contenu de la cle de service du projet doneo
 #   FIREBASE_API_KEY

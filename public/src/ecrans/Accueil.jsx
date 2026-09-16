@@ -58,7 +58,8 @@ export default function Accueil({ profil }) {
             Bonjour {profil.prenom}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {libelleRoles(profil.roles)} · {profil.adressePostale}
+            {libelleRoles(profil.roles)}
+            {libelleLieu(profil) && ` · ${libelleLieu(profil)}`}
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={seDeconnecter}>

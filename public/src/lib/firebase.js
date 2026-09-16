@@ -1,4 +1,4 @@
-// Configuration Firebase cote client (app web « m2gdp-g6-don »).
+// Configuration Firebase cote client (app web « doneo »).
 //
 // Ces valeurs sont PUBLIQUES par conception : elles sont livrees dans le bundle
 // navigateur. La securite repose sur les regles Firestore / Realtime Database
@@ -6,16 +6,17 @@
 // La service account key (acces admin) ne doit JAMAIS apparaitre ici : elle vit
 // dans les secrets du Worker Cloudflare.
 export const firebaseConfig = {
-  apiKey: 'AIzaSyD8ZbZ-Sf7Rfej1HGYm4AOTHoUi9D6kFj8',
-  authDomain: 'projet-bon-debarras.firebaseapp.com',
-  projectId: 'projet-bon-debarras',
-  storageBucket: 'projet-bon-debarras.firebasestorage.app',
-  messagingSenderId: '134185101825',
-  appId: '1:134185101825:web:ff72316d4db2548be46e00',
-  measurementId: 'G-RWBDJ6R3Y6',
-  databaseURL:
-    'https://projet-bon-debarras-default-rtdb.europe-west1.firebasedatabase.app',
+  apiKey: 'AIzaSyB1ytKre2fhGKDnkUNHeudFxsTeQrEWm6g',
+  authDomain: 'doneo-3561b.firebaseapp.com',
+  projectId: 'doneo-3561b',
+  storageBucket: 'doneo-3561b.firebasestorage.app',
+  messagingSenderId: '544412739021',
+  appId: '1:544412739021:web:a3d850d11354ccc6b91084',
+  measurementId: 'G-7R1MW55Z09',
+  // Pas de databaseURL : la Realtime Database n'est pas creee sur ce projet.
+  // Le front ne s'en sert pas — seul le script de verification d'infra la
+  // sollicitait. A rajouter ici le jour ou elle est provisionnee.
 };
 
 /** URL du backend Cloudflare Workers. */
-export const API_BASE = 'https://m2gdp-g6-don.guillaume-lorel.workers.dev';
+export const API_BASE = 'https://doneo-api.guillaume-lorel.workers.dev';

@@ -35,7 +35,9 @@ export default function Inscription({ email, surTermine }) {
     prenom: '',
     dateNaissance: '',
     roles: [],
-    adressePostale: '',
+    numeroRue: '',
+    rue: '',
+    complementAdresse: '',
     codePostal: '',
     ville: '',
   });
@@ -49,7 +51,8 @@ export default function Inscription({ email, surTermine }) {
     champs.prenom.trim() &&
     champs.dateNaissance &&
     champs.roles.length &&
-    champs.adressePostale.trim().length >= 5 &&
+    champs.numeroRue.trim() &&
+    champs.rue.trim().length >= 2 &&
     codePostalValide &&
     champs.ville.trim();
 
@@ -153,11 +156,45 @@ export default function Inscription({ email, surTermine }) {
           ))}
         </fieldset>
 
+        {/* Numero et rue sur une meme ligne : c'est ainsi qu'on ecrit une
+            adresse, et le numero n'a pas besoin de toute la largeur. */}
+        <div className="grid grid-cols-[6rem_1fr] gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="numeroRue">N°</Label>
+            <Input
+              id="numeroRue"
+              required
+              maxLength={10}
+              placeholder="12 bis"
+              value={champs.numeroRue}
+              onChange={modifier('numeroRue')}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rue">Rue</Label>
+            <Input
+              id="rue"
+              required
+              autoComplete="street-address"
+              placeholder="rue de la République"
+              value={champs.rue}
+              onChange={modifier('rue')}
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <Label htmlFor="adresse">Adresse postale</Label>
-          <Input id="adresse" required autoComplete="street-address"
-            placeholder="12 rue de la République"
-            value={champs.adressePostale} onChange={modifier('adressePostale')} />
+          <Label htmlFor="complement">
+            Complément d’adresse <span className="font-normal normal-case">(facultatif)</span>
+          </Label>
+          <Input
+            id="complement"
+            maxLength={100}
+            placeholder="Bât. B, appt 12"
+            value={champs.complementAdresse}
+            onChange={modifier('complementAdresse')}
+          />
         </div>
 
         {/* Code postal et ville vont ensemble : les separer sur deux lignes

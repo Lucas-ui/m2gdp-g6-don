@@ -1,9 +1,9 @@
 ---
 name: deployer
-description: Déploie le projet DON — le front et la vitrine sur Firebase Hosting, le backend sur Cloudflare Workers. À utiliser dès qu'une modification doit être visible en ligne, avant une démo, ou quand on demande de « mettre en ligne » / « publier » / « déployer » l'application.
+description: Déploie le projet Donéo — le front et la vitrine sur Firebase Hosting, le backend sur Cloudflare Workers. À utiliser dès qu'une modification doit être visible en ligne, avant une démo, ou quand on demande de « mettre en ligne » / « publier » / « déployer » l'application.
 ---
 
-# Déployer DON
+# Déployer Donéo
 
 Deux cibles indépendantes. Ne déployer que celle qui a changé.
 
@@ -15,8 +15,8 @@ version précédente.
 
 ```bash
 cd public && npm run build && cd ..
-export GOOGLE_APPLICATION_CREDENTIALS="$PWD/projet-bon-debarras-firebase-adminsdk-fbsvc-75eab3a19c.json"
-firebase deploy --only hosting --project projet-bon-debarras --non-interactive
+export GOOGLE_APPLICATION_CREDENTIALS="$PWD/doneo-3561b-firebase-adminsdk-fbsvc-032b52c11f.json"
+firebase deploy --only hosting --project doneo-3561b --non-interactive
 ```
 
 La clé de service évite le `firebase login` interactif — utile en CI et depuis un
@@ -24,8 +24,8 @@ poste non authentifié. Deux cibles sont définies dans `.firebaserc` :
 
 | Cible | Dossier publié | Build requis | URL |
 |-------|----------------|--------------|-----|
-| `landing` | `landing/` | non, HTML statique | https://projet-bon-debarras.web.app |
-| `app` | `public/dist` | **oui** (`npm run build`) | https://projet-bon-debarras-app.web.app |
+| `landing` | `landing/` | non, HTML statique | https://doneo-vitrine.web.app |
+| `app` | `public/dist` | **oui** (`npm run build`) | https://doneo.web.app |
 
 Pour n'en déployer qu'une : `--only hosting:landing` ou `--only hosting:app`.
 
@@ -53,8 +53,8 @@ Toujours confirmer que le déploiement a pris, plutôt que de se fier au message
 de succès :
 
 ```bash
-curl -s https://m2gdp-g6-don.guillaume-lorel.workers.dev/api/health
-curl -s -o /dev/null -w "%{http_code}\n" https://projet-bon-debarras-app.web.app
+curl -s https://doneo-api.guillaume-lorel.workers.dev/api/health
+curl -s -o /dev/null -w "%{http_code}\n" https://doneo.web.app
 ```
 
 Voir la skill `verif-infra` pour une vérification complète de la stack.

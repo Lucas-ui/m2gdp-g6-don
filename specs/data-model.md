@@ -1,18 +1,20 @@
-# Modèle de données — DON (dons entre particuliers)
+# Modèle de données — Donéo (vente caritative d'objets)
 
-Deux rôles qui se répondent : des **donateurs** cèdent gratuitement des objets
-dont ils n'ont plus l'usage, des **bénéficiaires** — l'application vise surtout
-les jeunes dans le besoin, étudiants qui s'installent, personnes en difficulté —
-en font la demande et viennent les récupérer.
+Don caritatif via la vente d'objets : le **donateur** cède un objet, en fixe le
+prix et choisit une **association**. Le **bénéficiaire** paie ce prix et repart
+avec l'objet ; **l'argent, lui, va intégralement à l'association**.
 
-**Les deux rôles se cumulent.** Un même compte peut donner ce dont il n'a plus
-l'usage tout en cherchant autre chose : c'est le cas courant entre étudiants.
+Trois acteurs, et il faut bien séparer qui reçoit quoi :
+
+| Acteur | Ce qu'il fait | Ce qu'il reçoit |
+|---|---|---|
+| **Donateur** | Cède un objet, fixe le prix, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
+| **Bénéficiaire** | Paie le prix, vient chercher l'objet | **L'objet** |
+| **Association** | Choisie par le donateur parmi une liste | **L'argent** versé par le bénéficiaire |
+
+**Les rôles `donateur` et `beneficiaire` se cumulent** sur un même compte : on
+peut céder un objet au profit d'une association tout en en acquérant un autre.
 D'où un champ `roles` sous forme de **liste**, et non un type unique.
-
-Aucun argent ne circule : ni prix, ni enchère, ni commission. La plateforme est
-un intermédiaire de confiance, pas une place de marché.
-
-Diagramme de classes (à éditer sur mermaidchart.com ou dans l'IDE).
 
 ```mermaid
 classDiagram
@@ -21,105 +23,149 @@ classDiagram
         +string email
         +string nom
         +string prenom
+        +date dateNaissance
         +string photoUrl
-        +string adressePostale
+        +string numeroRue
+        +string rue
+        +string complementAdresse
         +string codePostal
         +string ville
-        +date dateNaissance
         +string[] roles
         +date creeLe
+        +date misAJourLe
     }
 
-    class Don {
+    class Annonce {
         +string id
+        +string donateurId
+        +string associationId
         +string titre
         +string description
         +string categorie
         +string etat
-        +string statut
+        +number prix
+        +string creneauRetrait
+        +string numeroRue
+        +string rue
+        +string complementAdresse
         +string codePostal
+        +string ville
+        +string statut
         +string[] photos
         +date creeLe
-        +date disponibleJusquau
+        +date misAJourLe
     }
 
-    class Demande {
+    class Association {
         +string id
-        +string motivation
-        +string statut
+        +string nom
+        +string description
+    }
+
+    class Acquisition {
+        +string id
+        +string annonceId
+        +string beneficiaireId
+        +number prixAffiche
+        +number montantDebite
+        +string statutPaiement
+        +string referencePaiement
+        +string environnementPaiement
         +date creeLe
     }
 
     class Conversation {
         +string id
+        +string annonceId
         +date creeLe
     }
 
     class Message {
         +string id
+        +string conversationId
+        +string auteurId
         +string contenu
         +date creeLe
     }
 
-    Utilisateur "1" --> "*" Don : propose
-    Don "1" --> "*" Demande : reçoit
-    Utilisateur "1" --> "*" Demande : dépose
-    Don "1" --> "1" Conversation : discute
+    Utilisateur "1" --> "*" Annonce : publie (donateur)
+    Annonce "*" --> "1" Association : reverse à
+    Annonce "1" --> "*" Acquisition : reçoit
+    Utilisateur "1" --> "*" Acquisition : réalise (bénéficiaire)
+    Annonce "1" --> "1" Conversation : discute
     Conversation "1" --> "*" Message : contient
     Utilisateur "1" --> "*" Message : envoie
 ```
 
 ## Notes métier
 
-- Un **Don** appartient à un **Utilisateur** donateur. Il n'a **pas de prix** :
-  la valeur est l'usage, pas le montant.
-- Une **Demande** est déposée par un bénéficiaire. Elle porte une `motivation`
-  libre : c'est elle, et non un montant, qui départage plusieurs demandeurs.
-  Le donateur choisit — il n'y a pas d'attribution automatique.
-- Le **statut** d'un Don suit son cycle de vie : `disponible`, `reserve`
-  (une demande acceptée), `remis` (l'objet a changé de mains).
-- Le **statut** d'une Demande : `en_attente`, `acceptee`, `refusee`.
-- La **Conversation** lie donateur et bénéficiaire pour convenir du retrait.
-- Le **codePostal** porte la proximité : les objets se récupèrent en main
-  propre, donc la distance est un critère de recherche déterminant. Avec la
-  **ville**, c'est la seule partie de l'adresse rendue publique — elle figure
-  sur chaque carte de l'annuaire. L'**adressePostale**, elle,
-  ne sort jamais du profil : elle ne servira qu'au moment de convenir d'un
-  retrait, entre les deux personnes concernées.
+- **Utilisateur** a un ou plusieurs `roles` cumulables : `donateur`,
+  `beneficiaire`.
+- **Annonce** : un objet cédé par un donateur. `prix` est **obligatoire (> 0)**
+  et versé à l'**Association** choisie. `statut` : `disponible` / `reserve` /
+  `vendu`.
+- **Association** : destinataire de l'argent, choisie par le donateur dans une
+  liste. (Remplace l'ancienne entité `Cause`.)
+- **Créneau** : `creneauRetrait` = tranche horaire ponctuelle de retrait définie
+  par le donateur.
+- **Acquisition** : le bénéficiaire paie le prix ; `statutPaiement = paye`
+  débloque l'adresse exacte.
 
-## Énumérations
+> **Tous les champs sont en français**, y compris les clés étrangères
+> (`donateurId`, `associationId`, `beneficiaireId`) et les valeurs
+> d'énumération. Aucun champ en anglais ne doit réapparaître.
 
-| Champ | Valeurs |
-|-------|---------|
-| `roles` | liste non vide parmi `donateur`, `beneficiaire` |
-| `Don.statut` | `disponible`, `reserve`, `remis` |
-| `Don.etat` | `neuf`, `tres_bon`, `bon`, `usage` |
-| `Demande.statut` | `en_attente`, `acceptee`, `refusee` |
+### Adresse de l'utilisateur, décomposée
 
-## Ce que le modèle ne contient pas, volontairement
+L'adresse n'est pas une chaîne unique : elle est éclatée en champs, ce qui
+permet de n'en publier qu'une partie et de préremplir une annonce sans ressaisie.
 
-- **Aucun champ monétaire.** Pas de prix, pas de montant d'enchère, pas de
-  date de clôture d'enchère. Le don est gratuit et sans échéance imposée.
-  ⚠️ **Point rouvert par le client** — voir ci-dessous.
-- **Aucune cause caritative bénéficiaire.** Le don va directement d'une
-  personne à une autre, sans association intermédiaire ni reversement.
+| Champ | Exemple | Visibilité |
+|---|---|---|
+| `numeroRue` | `14 bis` | 🔒 privé |
+| `rue` | `rue de la Charité` | 🔒 privé |
+| `complementAdresse` | `Bât. B, appt 12` | 🔒 privé — facultatif |
+| `codePostal` | `69002` | 🌍 **public** |
+| `ville` | `Lyon` | 🌍 **public** |
 
-## ⚠️ Décisions en attente
+`numeroRue` est une **chaîne**, pas un nombre : « 14 bis », « 3-5 » et « 12 ter »
+sont des numéros valides.
 
-Ce modèle n'est pas figé. Le client (Quang TRAN) a rouvert deux points par
-e-mail au PO le **11/09/2026** :
+### Adresse à deux niveaux
 
-1. **Paiement symbolique fixé par le donateur.** Motif : donner le sentiment
-   d'un échange et limiter les abus. « Ce serait bien de l'avoir. » Cela
-   contredit directement la ligne « Aucun champ monétaire » ci-dessus et
-   ajouterait un montant au `Don`.
-2. **Charge de gestion du donateur.** Consulter et valider les profils des
-   demandeurs alourdit l'effort côté donateur. Alternative évoquée pour
-   l'alléger : créneau de retrait fixé, questions publiques, acceptation
-   automatique — au prix de la dimension solidarité portée par la `motivation`.
+**L'annonce porte exactement les mêmes cinq champs d'adresse que l'utilisateur.**
+Un seul vocabulaire, donc, et la possibilité de préremplir une annonce depuis le
+profil du donateur sans ressaisie. Le principe est identique des deux côtés : on
+publie de quoi juger la proximité, jamais de quoi se présenter à la porte.
 
-Le client harmonise par ailleurs la difficulté entre les projets des différents
-groupes : le périmètre peut donc bouger indépendamment de nos choix.
+- **Niveau public** — `codePostal` + `ville`. Visible **avant** paiement, et
+  même sans être connecté pour l'annuaire.
+- **Niveau privé** — `numeroRue` + `rue` + `complementAdresse`. Côté annonce,
+  ces trois champs ne sont révélés qu'**après paiement** ; ils ne doivent
+  **jamais** sortir d'une route publique. Côté utilisateur, ils ne sortent
+  jamais du tout.
 
-**Rien n'est tranché** : ces points attendent une décision du PO. Tant qu'elle
-n'est pas prise, le modèle ci-dessus reste la référence.
+Filtrage par **liste blanche** : on n'énumère que les champs autorisés à sortir,
+jamais les champs à cacher — sinon tout champ ajouté plus tard fuite par défaut.
+
+## Paiement : réel en mode test
+
+Le paiement **passe par un vrai prestataire** (Stripe ou équivalent), mais
+**uniquement en mode test**. Il est donc réellement validé — il y a un tunnel de
+paiement, une confirmation, une référence de transaction — sans qu'aucun euro ne
+change de main, et sans le moindre reversement réel à l'association.
+
+| Champ | Rôle |
+|---|---|
+| `prixAffiche` | Le **vrai** prix, celui que voit le bénéficiaire. Recopié depuis `Annonce.prix` au moment de l'acquisition, pour qu'un changement de prix ultérieur ne réécrive pas l'historique |
+| `montantDebite` | Ce qui est réellement prélevé : **0** |
+| `statutPaiement` | `en_attente` → `paye` (ou `echoue`). Le passage à `paye` est ce qui débloque l'adresse exacte |
+| `referencePaiement` | Identifiant renvoyé par le prestataire, preuve que le tunnel a bien été parcouru |
+| `environnementPaiement` | `test`. Rend explicite en base qu'aucune transaction réelle n'a eu lieu |
+
+> ⚠️ **Limite technique à connaître.** Stripe refuse les paiements d'un montant
+> nul (minimum de l'ordre de 0,50 €). Deux façons de tenir « montant payé = 0 » :
+> soit on envoie `prixAffiche` au prestataire en mode test — aucun argent réel ne
+> bouge de toute façon, et `montantDebite` reste à 0 en base ; soit on court-circuite
+> le prestataire quand le prix est faible. La première est la plus simple et la
+> plus démontrable. **À trancher avant d'implémenter.**
