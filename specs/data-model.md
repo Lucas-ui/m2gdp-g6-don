@@ -1,16 +1,21 @@
 # Modèle de données — Donéo (vente caritative d'objets)
 
-Don caritatif via la vente d'objets : le **donateur** cède un objet, en fixe le
-prix et choisit une **association**. Le **bénéficiaire** paie ce prix et repart
-avec l'objet ; **l'argent, lui, va intégralement à l'association**.
+Don caritatif via la vente d'objets : le **donateur** cède un objet et fixe une
+**participation solidaire** — un montant modeste — puis choisit une
+**association**. Le **bénéficiaire** verse cette participation et repart avec
+l'objet ; **l'argent, lui, va intégralement à l'association**.
 
 Trois acteurs, et il faut bien séparer qui reçoit quoi :
 
 | Acteur | Ce qu'il fait | Ce qu'il reçoit |
 |---|---|---|
-| **Donateur** | Cède un objet, fixe le prix, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
-| **Bénéficiaire** | Paie le prix, vient chercher l'objet | **L'objet** |
+| **Donateur** | Cède un objet, fixe la participation solidaire, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
+| **Bénéficiaire** | Un étudiant, ou une personne dans le besoin. Verse la participation et vient chercher l'objet | **L'objet**, à petit prix |
 | **Association** | Choisie par le donateur parmi une liste | **L'argent** versé par le bénéficiaire |
+
+La participation n'est pas un prix de marché : elle reste **modeste**, pour que
+l'objet demeure accessible à qui en a besoin. Ce qu'elle achète, ce n'est pas la
+valeur de l'objet — c'est le geste de soutenir une association.
 
 **Les rôles `donateur` et `beneficiaire` se cumulent** sur un même compte : on
 peut céder un objet au profit d'une association tout en en acquérant un autre.
@@ -43,7 +48,7 @@ classDiagram
         +string description
         +string categorie
         +string etat
-        +number prix
+        +number participation
         +string creneauRetrait
         +string numeroRue
         +string rue
@@ -62,11 +67,11 @@ classDiagram
         +string description
     }
 
-    class Acquisition {
+    class Reservation {
         +string id
         +string annonceId
         +string beneficiaireId
-        +number prixAffiche
+        +number participationDemandee
         +number montantDebite
         +string statutPaiement
         +string referencePaiement
@@ -90,8 +95,8 @@ classDiagram
 
     Utilisateur "1" --> "*" Annonce : publie (donateur)
     Annonce "*" --> "1" Association : reverse à
-    Annonce "1" --> "*" Acquisition : reçoit
-    Utilisateur "1" --> "*" Acquisition : réalise (bénéficiaire)
+    Annonce "1" --> "*" Reservation : reçoit
+    Utilisateur "1" --> "*" Reservation : dépose (bénéficiaire)
     Annonce "1" --> "1" Conversation : discute
     Conversation "1" --> "*" Message : contient
     Utilisateur "1" --> "*" Message : envoie
@@ -101,15 +106,20 @@ classDiagram
 
 - **Utilisateur** a un ou plusieurs `roles` cumulables : `donateur`,
   `beneficiaire`.
-- **Annonce** : un objet cédé par un donateur. `prix` est **obligatoire (> 0)**
-  et versé à l'**Association** choisie. `statut` : `disponible` / `reserve` /
-  `vendu`.
+- **Annonce** : un objet cédé par un donateur. `participation` est
+  **obligatoire (> 0)** et versée à l'**Association** choisie. `statut` :
+  `disponible` / `reserve` / `remis`.
+- **Participation** : le montant demandé au bénéficiaire. Il se veut **modeste**
+  — c'est une contribution à une cause, pas le prix de l'objet. Aucun plafond
+  technique n'est imposé : la modération relève de l'usage, pas du contrôle.
 - **Association** : destinataire de l'argent, choisie par le donateur dans une
   liste. (Remplace l'ancienne entité `Cause`.)
 - **Créneau** : `creneauRetrait` = tranche horaire ponctuelle de retrait définie
   par le donateur.
-- **Acquisition** : le bénéficiaire paie le prix ; `statutPaiement = paye`
-  débloque l'adresse exacte.
+- **Reservation** : le bénéficiaire verse la participation et met l'objet de
+  côté. `statutPaiement = paye` débloque l'adresse exacte. Le terme
+  « réservation » est préféré à « acquisition » : il dit que l'objet est mis de
+  côté jusqu'au retrait, sans évoquer un achat.
 
 > **Tous les champs sont en français**, y compris les clés étrangères
 > (`donateurId`, `associationId`, `beneficiaireId`) et les valeurs
@@ -157,7 +167,7 @@ change de main, et sans le moindre reversement réel à l'association.
 
 | Champ | Rôle |
 |---|---|
-| `prixAffiche` | Le **vrai** prix, celui que voit le bénéficiaire. Recopié depuis `Annonce.prix` au moment de l'acquisition, pour qu'un changement de prix ultérieur ne réécrive pas l'historique |
+| `participationDemandee` | La **vraie** participation, celle que voit le bénéficiaire. Recopiée depuis `Annonce.participation` au moment de la réservation, pour qu'une modification ultérieure ne réécrive pas l'historique |
 | `montantDebite` | Ce qui est réellement prélevé : **0** |
 | `statutPaiement` | `en_attente` → `paye` (ou `echoue`). Le passage à `paye` est ce qui débloque l'adresse exacte |
 | `referencePaiement` | Identifiant renvoyé par le prestataire, preuve que le tunnel a bien été parcouru |
@@ -165,7 +175,8 @@ change de main, et sans le moindre reversement réel à l'association.
 
 > ⚠️ **Limite technique à connaître.** Stripe refuse les paiements d'un montant
 > nul (minimum de l'ordre de 0,50 €). Deux façons de tenir « montant payé = 0 » :
-> soit on envoie `prixAffiche` au prestataire en mode test — aucun argent réel ne
-> bouge de toute façon, et `montantDebite` reste à 0 en base ; soit on court-circuite
-> le prestataire quand le prix est faible. La première est la plus simple et la
-> plus démontrable. **À trancher avant d'implémenter.**
+> soit on envoie `participationDemandee` au prestataire en mode test — aucun
+> argent réel ne bouge de toute façon, et `montantDebite` reste à 0 en base ;
+> soit on court-circuite le prestataire quand la participation est faible. La
+> première est la plus simple et la plus démontrable. **À trancher avant
+> d'implémenter.**

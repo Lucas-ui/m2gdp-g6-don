@@ -4,10 +4,12 @@ info:
   version: "0.2.0"
   description: >
     API de la plateforme de don caritatif via la vente d'objets (groupe 6).
-    Le donateur cède un objet, en fixe le prix et choisit une association ; le
-    bénéficiaire paie ce prix et repart avec l'objet, tandis que l'argent va à
-    l'association. Adresse exacte révélée après paiement (paiement FAKE côté
-    FRONT). Squelette — à enrichir US par US.
+    Le donateur cède un objet, fixe une participation solidaire — un montant
+    modeste — et choisit une association. Le bénéficiaire, étudiant ou personne
+    dans le besoin, verse cette participation et repart avec l'objet à petit
+    prix, tandis que l'argent va intégralement à l'association. Adresse exacte
+    révélée après validation de la participation (paiement réel, mais en mode
+    test). Squelette — à enrichir US par US.
 
 paths:
   /api/health:
@@ -158,11 +160,12 @@ paths:
         "401": { description: "Authentification requise" }
         "422": { description: "Champs invalides" }
 
-  /api/annonces/{id}/acquisition:
+  /api/annonces/{id}/reservation:
     post:
-      tags: ["Acquisitions"]
-      summary: "💳 Acquérir un objet (paiement en mode test → révèle l'adresse)"
+      tags: ["Réservations"]
+      summary: "🤝 Réserver un objet (participation en mode test → révèle l'adresse)"
       description: >
+        Le bénéficiaire verse la participation solidaire et met l'objet de côté.
         Le paiement passe par un vrai prestataire, mais **en mode test** : il est
         réellement validé et porte une référence de transaction, alors que le
         montant débité est 0 et qu'aucun reversement réel n'a lieu. Le passage à
@@ -179,17 +182,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Acquisition"
+              $ref: "#/components/schemas/Reservation"
       responses:
         "201":
-          description: "Acquisition confirmée ; adresse exacte débloquée"
+          description: "Réservation confirmée ; adresse exacte débloquée"
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   statutPaiement: { type: string, enum: [paye] }
-                  prixAffiche: { type: number, description: "Le vrai prix, affiché au bénéficiaire" }
+                  participationDemandee: { type: number, description: "La participation réellement affichée au bénéficiaire" }
                   montantDebite: { type: number, enum: [0], description: "Toujours 0 : mode test" }
                   referencePaiement: { type: string }
                   numeroRue:
@@ -200,7 +203,7 @@ paths:
                     description: "🔓 Révélée ici, et seulement ici"
                   complementAdresse: { type: string }
         "401": { description: "Authentification requise" }
-        "409": { description: "Annonce déjà réservée ou vendue" }
+        "409": { description: "Annonce déjà réservée ou déjà remise" }
 
 components:
   securitySchemes:
@@ -233,7 +236,7 @@ components:
     # schema de reponse sur une route de liste : voir AnnoncePublique.
     AnnonceSoumise:
       type: object
-      required: [titre, description, categorie, etat, prix, associationId, creneauRetrait, numeroRue, rue, codePostal, ville]
+      required: [titre, description, categorie, etat, participation, associationId, creneauRetrait, numeroRue, rue, codePostal, ville]
       properties:
         titre:
           type: string
@@ -251,10 +254,14 @@ components:
           type: string
           enum: [neuf, bon_etat, usage]
           description: "État de l'objet ♻️"
-        prix:
+        participation:
           type: number
           minimum: 0.01
-          description: "Prix fixé par le donateur en euros 💶 (obligatoire, versé à l'association)"
+          description: >
+            Participation solidaire en euros 💶, fixée par le donateur.
+            Obligatoire et versée intégralement à l'association. Elle se veut
+            **modeste** — c'est une contribution à une cause, pas le prix de
+            l'objet — mais aucun plafond n'est imposé techniquement.
         associationId:
           type: string
           description: "Association choisie par le donateur ❤️ — c'est elle qui touche l'argent"
@@ -297,9 +304,9 @@ components:
         description: { type: string }
         categorie: { $ref: "#/components/schemas/AnnonceSoumise/properties/categorie" }
         etat: { $ref: "#/components/schemas/AnnonceSoumise/properties/etat" }
-        prix:
+        participation:
           type: number
-          description: "Prix fixé par le donateur 💶 (versé à l'association)"
+          description: "Participation solidaire 💶 — versée à l'association"
         associationId: { type: string }
         donateurId: { type: string }
         creneauRetrait:
@@ -316,13 +323,13 @@ components:
           items: { type: string, format: uri }
         statut:
           type: string
-          enum: [disponible, reserve, vendu]
+          enum: [disponible, reserve, remis]
           default: disponible
-          description: "Statut de l'annonce 🟢"
+          description: "Statut de l'annonce 🟢 — « remis » et non « vendu » : rien n'est vendu ici"
         creeLe: { type: string, format: date-time }
         misAJourLe: { type: string, format: date-time }
 
-    Acquisition:
+    Reservation:
       type: object
       properties:
         id: { type: string, readOnly: true }
@@ -335,14 +342,14 @@ components:
           readOnly: true
           description: >
             Identifiant du bénéficiaire 👤 — repris du jeton vérifié, jamais du
-            corps de la requête : sinon on pourrait acheter au nom d'un autre.
-        prixAffiche:
+            corps de la requête : sinon on pourrait réserver au nom d'un autre.
+        participationDemandee:
           type: number
           readOnly: true
           description: >
-            Le **vrai** prix, celui affiché au bénéficiaire. Recopié depuis
-            `Annonce.prix` au moment de l'acquisition, pour qu'un changement de
-            prix ultérieur ne réécrive pas l'historique.
+            La **vraie** participation, celle affichée au bénéficiaire. Recopiée
+            depuis `Annonce.participation` au moment de la réservation, pour
+            qu'une modification ultérieure ne réécrive pas l'historique.
         montantDebite:
           type: number
           enum: [0]
