@@ -1,7 +1,20 @@
 # Tickets — EPIC-0 et EPIC-1
 
-Corps prêts à coller dans GitHub. Les tickets existants sont **modifiés en
-place** ; les autres sont à créer.
+> ## ⚠️ État au 16/09/2026 — à lire avant d'utiliser ce fichier
+>
+> Ce document servait à préparer des corps de tickets à coller dans GitHub. Ce
+> rôle est terminé.
+>
+> **Il ne reste que quatre issues sur GitHub, toutes fermées :** #1 (EPIC),
+> #2 (inscription), #3 (connexion) et #9 (annuaire). **Les douze tickets TASK
+> ont été supprimés** du dépôt. Les sections `[TASK-n]` ci-dessous ne
+> correspondent donc plus à rien sur GitHub — elles ne sont conservées que
+> comme trace du découpage réalisé.
+>
+> **En cas de divergence, les issues GitHub font foi**, pas ce fichier.
+>
+> Deux arbitrages proposés ici ont été repris dans les issues : les rôles
+> cumulables, et l'abandon de toute condition d'âge (#2 CA5).
 
 ## Arbitrages actés
 
@@ -21,25 +34,15 @@ place** ; les autres sont à créer.
 
 ## Arborescence cible
 
-```
-EPIC-0 · Socle technique et mise en ligne
-├── TASK-1  (#4, fermé) Initialiser Firebase Auth et Firestore
-├── TASK-9  Provisionner Cloudflare (D1, R2, Worker, secrets)
-├── TASK-10 Monter le squelette de la PWA
-├── TASK-11 Configurer l'outillage agentique (MCP, skills)
-└── TASK-12 Déployer et vérifier la chaîne de bout en bout
+Les tâches ayant été supprimées de GitHub, il ne reste que deux niveaux :
 
-EPIC-1 · Authentification et profil utilisateur
-├── US-1 (#2) Inscription et création de profil
-│   ├── TASK-2 (#5) Vues de saisie e-mail
-│   ├── TASK-5     Passerelle backend
-│   ├── TASK-6     Formulaire de profil
-│   └── TASK-7     Lien expiré
-├── US-2 (#3) Connexion utilisateur existant
-│   ├── TASK-3 (#6) Envoi du lien magique
-│   └── TASK-4 (#7) Retour du lien, session et déconnexion
-└── US-3     Consulter les membres inscrits
-    └── TASK-8     Annuaire des inscrits
+```
+EPIC-0 · Socle technique et mise en ligne          (pas d'issue dédiée)
+
+EPIC-1 · Authentification et profil utilisateur    #1  (fermée)
+├── US-1 Inscription et création de profil         #2  (fermée)
+├── US-2 Connexion utilisateur existant            #3  (fermée)
+└── US-3 Consulter les membres inscrits            #9  (fermée)
 ```
 
 ---
@@ -62,105 +65,20 @@ Disposer d'une chaîne complète et vérifiée — front, backend, bases de donn
 - Toute logique métier (dons, demandes, messagerie) : voir les EPIC suivants.
 - Sécurité, performance et scalabilité de production, explicitement hors barème.
 
-### Tâches associées
-- [x] TASK-1 : Initialiser Firebase Auth et Firestore
-- [ ] TASK-9 : Provisionner Cloudflare (D1, R2, Worker, secrets)
-- [ ] TASK-10 : Monter le squelette de la PWA
-- [ ] TASK-11 : Configurer l'outillage agentique (MCP, skills)
-- [ ] TASK-12 : Déployer et vérifier la chaîne de bout en bout
+### Réalisé
+- [x] Firebase Auth (lien magique) et Firestore initialisés.
+- [x] Cloudflare provisionné : D1 `doneo-sessions`, R2 `doneo-fichiers`, Worker et secrets.
+- [x] Squelette PWA (Vite + React), `publicDir` sur `static/`, build vers `public/dist`.
+- [x] Service worker : **réseau d'abord** sur la navigation, `/api/` **jamais** mis en cache.
+- [x] Outillage agentique versionné : `.mcp.json`, skills `deployer` et `verif-infra`.
+- [x] Deux sites Hosting (`landing`, `app`) déployés et vérifiés de bout en bout.
 
-***
+> **Deux pièges à ne pas réapprendre.** R2 exige une **activation préalable** du
+> service sur le compte (erreur `code: 10042` sinon). Et un site Hosting
+> nouvellement créé n'est **pas** ajouté automatiquement aux domaines autorisés
+> de Firebase Auth : tout lien magique pointant dessus est rejeté sans
+> explication.
 
----
-
-# ✏️ #4 · [TASK-1] Initialiser Firebase Auth et Firestore
-
-*Ticket déjà fermé. Rattacher à l'EPIC-0 et ajouter la note finale.*
-
-***
-
-- [x] Configurer le projet Firebase dans la console.
-- [x] Activer la méthode d'authentification « Email/Password » et spécifiquement l'option « Email link (passwordless sign-in) ».
-- [x] Créer la collection Utilisateur dans Firestore (NoSQL).
-- [x] Générer et intégrer les clés de configuration Firebase dans le projet Front-end.
-
-> **Note** : une collection Firestore n'a pas à être créée à l'avance, elle naît
-> à la première écriture — le troisième point était sans objet.
-> Projet : `projet-bon-debarras`. Lien magique **vérifié par envoi réel**.
-
-***
-
----
-
-# 🆕 [TASK-9] Provisionner Cloudflare (D1, R2, Worker, secrets)
-
-***
-
-- [ ] Créer la base D1 `m2gdp-g6-don-sessions` et reporter son `database_id` dans `wrangler.toml`.
-- [ ] Activer le service R2 sur le compte, puis créer le bucket `m2gdp-g6-don-fichiers`.
-- [ ] Déployer le Worker et exposer un healthcheck `GET /api/health`.
-- [ ] Enregistrer les secrets `FIREBASE_SERVICE_ACCOUNT` et `FIREBASE_API_KEY`.
-- [ ] Documenter la procédure dans `docs/SETUP.md`.
-
-**Pièges rencontrés, à conserver dans la doc :**
-- R2 exige une **activation préalable** du service sur le compte (erreur `code: 10042` sinon), avec moyen de paiement même en palier gratuit.
-- `wrangler secret put` sur un Worker inexistant ouvre une **invite interactive** : il faut déployer *avant* de poser les secrets.
-- Le `binding` suggéré par `wrangler d1 create` est ignoré : on garde `DB_SESSIONS`, le nom lu par le code.
-
-***
-
----
-
-# 🆕 [TASK-10] Monter le squelette de la PWA
-
-***
-
-- [ ] Initialiser Vite + React + Tailwind + shadcn/ui dans `/public`.
-- [ ] Configurer `publicDir` sur `static/` et la sortie de build sur `public/dist`, cible du Hosting.
-- [ ] Ajouter le `manifest.webmanifest` et les icônes 192 et 512 px.
-- [ ] Écrire un service worker : **réseau d'abord** sur la navigation, `/api/` **jamais** mis en cache.
-- [ ] Poser des jetons de couleur neutres, remplaçables à l'arrivée de la charte UX.
-
-> **Choix** : JavaScript et non TypeScript. TS est passé en 7.0, une réécriture
-> majeure dont l'outillage n'a pas fini de suivre — mauvais pari à 7 jours de la J2.
-
-***
-
----
-
-# 🆕 [TASK-11] Configurer l'outillage agentique (MCP, skills)
-
-***
-
-Couvre la ligne « Agentic Coding : IDE avec IA, Skills et MCP configurés » de la checklist J2.
-
-- [ ] Déclarer les serveurs MCP dans un `.mcp.json` **versionné**, avec versions épinglées.
-- [ ] `playwright` — pilotage navigateur pour les tests E2E exigés au barème.
-- [ ] `shadcn` — registre de composants UI.
-- [ ] Écrire les skills projet dans `.claude/skills/` : `deployer` et `verif-infra`.
-- [ ] Y consigner les pièges déjà rencontrés, pour ne pas les redécouvrir en J4.
-
-***
-
----
-
-# 🆕 [TASK-12] Déployer et vérifier la chaîne de bout en bout
-
-***
-
-- [ ] Créer les deux sites Hosting et lier les cibles `landing` et `app`.
-- [ ] Déployer la vitrine et l'application.
-- [ ] Vérifier **chaque service par une écriture suivie d'une lecture, puis nettoyage** : D1, R2, Firestore, Realtime Database.
-- [ ] Vérifier le Worker : healthcheck, route inconnue, préflight CORS.
-- [ ] Vérifier que le CORS **refuse** une origine non autorisée.
-
-> **Piège** : un site Hosting nouvellement créé n'est **pas** ajouté
-> automatiquement aux domaines autorisés de Firebase Auth. Tout lien magique
-> pointant vers ce domaine est alors rejeté sans explication.
-
-***
-
----
 ---
 
 # ✏️ #1 · [EPIC-1] Authentification et profil utilisateur
@@ -173,7 +91,7 @@ Gérer l'identité et l'accès des utilisateurs à la plateforme de dons de mani
 ### Périmètre fonctionnel
 - Inscription et connexion via e-mail avec un "Lien magique".
 - Création du profil obligatoire pour les nouveaux utilisateurs après le clic sur le lien.
-- Champs du profil : nom, prénom, date de naissance, **rôles (donateur et/ou bénéficiaire, cumulables)**, adresse, code postal.
+- Champs du profil : nom, prénom, date de naissance, **rôles (donateur et/ou bénéficiaire, cumulables)**, numéro de rue, rue, complément (facultatif), code postal, ville.
 - Déconnexion.
 - Consultation des membres inscrits.
 - **Passerelle backend** : le front n'accède jamais à Firestore directement. Il présente son jeton d'identité, le Worker Cloudflare le vérifie, puis agit avec la clé de service.
@@ -200,21 +118,21 @@ En tant que nouveau visiteur, je veux m'inscrire via un lien magique envoyé par
 - L'utilisateur saisit son e-mail sur la page d'inscription.
 - Le système indique si l'adresse a déjà un compte, puis envoie le lien magique. **Le lien est le même dans les deux cas ; seul le message affiché diffère.**
 - L'utilisateur clique sur le lien dans sa boîte mail. Firebase crée le compte à la consommation du lien.
-- Il est redirigé vers un formulaire pour compléter son profil : nom, prénom, rôles (donateur et/ou bénéficiaire), adresse, code postal, date de naissance.
+- Il est redirigé vers un formulaire pour compléter son profil : nom, prénom, rôles (donateur et/ou bénéficiaire), numéro de rue, rue, complément (facultatif), code postal, ville, date de naissance.
 - Validation et redirection vers la page d'accueil en mode connecté.
 
 ### Critères d'acceptation
 - [ ] **CA1 (Happy Path) :** Le champ e-mail possède une validation syntaxique en temps réel. Un message de confirmation est affiché après l'envoi du lien.
-- [ ] **CA2 (Happy Path) :** Après avoir cliqué sur le lien, le formulaire d'inscription affiche bien les champs requis (nom, prénom, **rôles — plusieurs choix possibles**, adresse, code postal, date de naissance). La soumission crée le compte.
+- [ ] **CA2 (Happy Path) :** Après avoir cliqué sur le lien, le formulaire d'inscription affiche bien les champs requis (nom, prénom, **rôles — plusieurs choix possibles**, numéro de rue, rue, complément (facultatif), code postal, ville, date de naissance). La soumission crée le compte.
 - [ ] **CA3 (Erreur gérée) :** Si le format de l'e-mail est invalide, le bouton de soumission est bloqué et un message d'aide apparaît.
 - [ ] **CA4 (Erreur gérée) :** Si le lien magique est expiré, une page d'erreur propose de renvoyer un nouveau lien.
-- [ ] **CA5 (Erreur gérée) :** Si l'utilisateur n'est pas majeur, le bouton de soumission est bloqué et un message d'aide apparaît.
+- [x] ~~**CA5 (Erreur gérée) :** Si l'utilisateur n'est pas majeur, le bouton de soumission est bloqué et un message d'aide apparaît.~~ **Abandonné sur décision produit :** la plateforme s'adresse en priorité aux jeunes dans le besoin, mineurs compris. La date de naissance reste obligatoire et validée, mais sans seuil d'âge.
 - [ ] **CA6 (Erreur gérée) :** Les champs sont validés côté serveur, pas seulement dans le navigateur. Une requête forgée est rejetée en `422`.
 
 ### Spécifications techniques
 - **ST1 :** Implémentation de Firebase Auth avec _sendSignInLinkToEmail_.
 - **ST2 :** Validation et consommation du lien via _signInWithEmailLink_.
-- **ST3 :** À la complétion du profil, écriture d'un document dans la collection `utilisateurs` de Cloud Firestore **via le Worker** (`PUT /api/profil`), jamais depuis le front. Champs : `id`, `email`, `nom`, `prenom`, `photoUrl`, `adressePostale`, `codePostal`, `dateNaissance`, `roles[]`, `creeLe`, `misAJourLe`.
+- **ST3 :** À la complétion du profil, écriture d'un document dans la collection `utilisateurs` de Cloud Firestore **via le Worker** (`PUT /api/profil`), jamais depuis le front. Champs : `id`, `email`, `nom`, `prenom`, `photoUrl`, `numeroRue`, `rue`, `complementAdresse`, `codePostal`, `ville`, `dateNaissance`, `roles[]`, `creeLe`, `misAJourLe`.
 - **ST4 :** L'e-mail stocké est **repris du jeton d'identité vérifié, jamais du formulaire** : sinon n'importe qui pourrait s'enregistrer sous l'adresse d'un autre.
 
 ### Exclusions (Hors scope MVP)
@@ -260,25 +178,31 @@ En tant qu'utilisateur déjà inscrit (donateur, bénéficiaire, ou les deux), j
 
 ---
 
-# 🆕 [US-3] Consulter les membres inscrits
+# 🆕 [US-3] Consulter les membres inscrits — issue #9
+
+> **Cette copie reflète l'issue GitHub #9, qui fait foi.** Toute divergence se
+> corrige ici, pas sur GitHub.
 
 ***
 
 ### Titre
-En tant qu'utilisateur connecté, je veux voir qui est inscrit sur la plateforme, afin de me rassurer sur le fait que la communauté est réelle et active avant de proposer ou de demander un objet.
+Consulter la liste des membres inscrits depuis l'accueil
 
 ### Spécifications fonctionnelles
-**Contexte :** Sur une plateforme de dons entre inconnus, la confiance est le premier frein. Voir d'autres membres réels lève ce frein. C'est aussi une exigence explicite de la J2 : « inscription pas à pas **et** affichage des utilisateurs ».
+**Contexte :** Sur une plateforme de dons entre inconnus, la confiance est le premier frein. Voir d'autres membres réels lève ce frein. C'est également une exigence du POC pour prouver la remontée de données.
 **Happy Path :**
 - Une fois connecté et son profil complété, l'utilisateur arrive sur l'accueil.
-- L'accueil affiche la liste des membres inscrits avec leur prénom, nom et rôles.
-- Le compteur indique le nombre total d'inscrits.
+- L'accueil charge et affiche la liste des membres inscrits avec leur prénom, nom, rôles et adresse (ville/code postal).
+- Un compteur indique le nombre total d'inscrits.
 
 ### Critères d'acceptation
-- [ ] **CA1 (Happy Path) :** La liste affiche prénom, nom et rôles de chaque inscrit, avec le total.
-- [ ] **CA2 (Sécurité) :** Les adresses e-mail ne sont **jamais** exposées dans la réponse de l'API.
-- [ ] **CA3 (Cas limite) :** Si aucun membre n'est inscrit, un message explicite est affiché plutôt qu'une liste vide.
-- [ ] **CA4 (Erreur gérée) :** Si le chargement échoue, un message d'erreur est affiché sans casser le reste de l'accueil.
+- [x] **CA1 (Happy Path) :** La liste affiche prénom, nom, rôles et adresse (ville/code postal) de chaque inscrit, avec le total.
+- [x] **CA2 (Sécurité) :** Les adresses e-mail ne sont **jamais** exposées dans la réponse de l'API.
+- [x] **CA3 (Cas limite) :** Si la base ne contient que l'utilisateur actuel, un message l'informant qu'il est le premier (ou qu'il n'y a pas d'autres membres) s'affiche.
+- [x] **CA4 (Erreur gérée) :** Si le chargement échoue, un message d'erreur est affiché sans casser le reste de l'accueil.
+
+### Prérequis
+* Les profils doivent être créés en base via l'US (Inscription).
 
 ### Spécifications techniques
 - **ST1 :** `GET /api/utilisateurs` sur le Worker, qui lit la collection `utilisateurs` et retire le champ `email` avant de répondre.
@@ -288,133 +212,17 @@ En tant qu'utilisateur connecté, je veux voir qui est inscrit sur la plateforme
 - Pas de fiche profil détaillée par membre.
 - Pas de photo dans la liste tant que le téléversement n'est pas fait.
 
-***
+### Écart assumé par rapport à ST1
 
----
----
+ST1 décrit une **liste noire** (« retire le champ `email` »). Le Worker applique
+une **liste blanche** : il ne recopie que `id`, `prenom`, `nom`, `roles`,
+`photoUrl`, `codePostal` et `ville`.
 
-# ✏️ #5 · [TASK-2][POC] Intégrer les vues de saisie e-mail
-
-***
-
-- [ ] Intégrer le composant (shadcn/ui) pour la saisie de l'e-mail (valable pour inscription et connexion).
-- [ ] Ajouter la validation syntaxique en temps réel (regex email).
-- [ ] Coder l'état d'attente lors de la soumission (bouton désactivé, libellé « Envoi en cours… »).
-- [ ] Intégrer la page de confirmation « Consultez vos e-mails ».
-- [ ] **Différencier le message affiché** selon que l'adresse a déjà un compte ou non, via `POST /api/auth/statut-email`.
-- [ ] **Proposer « Utiliser une autre adresse »** depuis l'écran de confirmation (faute de frappe dans l'e-mail).
-
-**Valide :** US-1 CA1, CA3 · US-2 CA1
-
-***
-
----
-
-# ✏️ #6 · [TASK-3] Implémenter l'envoi du lien magique via Firebase
-
-***
-
-- [ ] Créer la fonction appelant _sendSignInLinkToEmail_ de Firebase Auth.
-- [ ] Configurer l'_ActionCodeSettings_ pour définir l'URL de redirection (vers l'application).
-- [ ] Stocker temporairement l'e-mail saisi dans le _localStorage_ (nécessaire pour la vérification au retour).
-- [ ] **Prévoir le repli si le `localStorage` est indisponible** (navigation privée, stockage bloqué) : ne pas échouer, redemander l'e-mail au retour.
-- [ ] Gérer les erreurs d'envoi (message d'erreur lisible).
-- [ ] **Vérifier que le domaine de redirection figure dans les domaines autorisés** de Firebase Auth.
-
-**Valide :** US-1 ST1 · US-2 ST2
-
-***
-
----
-
-# ✏️ #7 · [TASK-4] Traiter la redirection, la session et la déconnexion
-
-*(le corps est actuellement vide ; le titre gagne « et la déconnexion »)*
-
-***
-
-- [ ] Détecter un retour de lien magique (`isSignInWithEmailLink`).
-- [ ] Consommer le lien via `signInWithEmailLink`.
-- [ ] **Cross-device** : si l'e-mail n'est plus en mémoire locale, le redemander au lieu d'échouer → **CA3 (US-2)**.
-- [ ] **Nettoyer l'URL après connexion** : le code à usage unique ne doit rester ni dans l'historique ni rejouable au rafraîchissement → **CA5 (US-2)**.
-- [ ] Mettre en place l'observateur d'état de connexion alimentant le contexte client → **ST1 (US-2)**.
-- [ ] Aiguiller après connexion : formulaire d'inscription si le profil n'existe pas, accueil sinon.
-- [ ] **Déconnexion** depuis l'accueil, retour à l'écran de saisie d'e-mail → **CA4 (US-2)**.
-
-**Valide :** US-1 ST2 · US-2 CA2, CA3, CA4, CA5, ST1
-
-***
-
----
-
-# 🆕 [TASK-5] Passerelle backend : vérification des jetons et accès Firestore
-
-***
-
-Aucune tâche ne couvrait le backend, alors que c'est l'architecture imposée par le cours : le front ne doit jamais écrire dans Firestore directement.
-
-- [ ] Vérifier le jeton d'identité Firebase dans le Worker : signature RS256 contre les clés publiques Google, **et** expiration, date d'émission, audience, émetteur.
-- [ ] Mettre en cache les clés publiques Google selon leur en-tête `Cache-Control`.
-- [ ] Obtenir un jeton de service à partir de la clé privée (secret du Worker) pour appeler Firestore.
-- [ ] Convertir entre le format typé de Firestore et des objets JavaScript ordinaires.
-- [ ] Restreindre le CORS au domaine de l'application ; tolérer `localhost` en développement.
-- [ ] `POST /api/auth/statut-email` — l'adresse a-t-elle déjà un compte.
-- [ ] `GET /api/profil` — `404` explicite si le profil reste à créer.
-- [ ] `PUT /api/profil` — validation serveur des champs, réponse `422` détaillée.
-
-> Une signature valide ne suffit pas : sans contrôle de l'audience, un jeton émis
-> pour un **autre** projet Firebase serait accepté.
-
-**Valide :** US-1 ST3, ST4, CA6
-
-***
-
----
-
-# 🆕 [TASK-6] Formulaire de profil et enregistrement
-
-***
-
-- [ ] Champs : nom, prénom, **date de naissance**, rôles, adresse, **code postal**.
-- [ ] **Bloquer la soumission si l'utilisateur n'est pas majeur**, avec message d'aide → **CA5**.
-- [ ] Rôles en **cases à cocher** (cumulables), au moins un obligatoire.
-- [ ] L'e-mail n'est pas saisissable : il est repris du jeton vérifié.
-- [ ] Afficher le formulaire uniquement si `GET /api/profil` répond `404`.
-- [ ] Rediriger vers l'accueil connecté après validation.
-- [ ] Afficher l'emplacement de la photo, sans téléversement (hors scope MVP).
-
-**Valide :** US-1 CA2, CA5
-
-***
-
----
-
-# 🆕 [TASK-7] Gérer le lien expiré ou déjà consommé
-
-***
-
-- [ ] Détecter les codes d'erreur Firebase `expired-action-code` et `invalid-action-code`.
-- [ ] Afficher un écran dédié expliquant la cause, distinct d'une erreur technique.
-- [ ] Proposer le renvoi d'un nouveau lien, avec temporisation anti-abus.
-
-**Valide :** US-1 CA4
-
-***
-
----
-
-# 🆕 [TASK-8] Afficher l'annuaire des inscrits
-
-***
-
-- [ ] `GET /api/utilisateurs` — sans exposer les adresses e-mail.
-- [ ] Liste sur l'accueil : initiale, prénom, nom, rôles.
-- [ ] Afficher le nombre total d'inscrits.
-- [ ] Gérer les états de chargement, de liste vide et d'erreur.
-
-**Valide :** US-3 CA1, CA2, CA3, CA4, ST1
-
-***
+C'est plus strict, et cela satisfait CA2. Une liste noire exposerait
+`numeroRue`, `rue` et `dateNaissance` — l'adresse du domicile et la date de
+naissance de chaque inscrit, sur un annuaire lisible sans être connecté. Et
+chaque champ ajouté au profil plus tard s'y retrouverait automatiquement.
+**CA2 est la fin, ST1 n'était qu'un moyen : on garde la fin.**
 
 ---
 ---
@@ -430,24 +238,27 @@ ouvre la session s'il existait.
 Croire à deux liens différents conduirait à chercher une API qui n'existe pas.
 Ce qui diffère est **uniquement le message affiché** — d'où `statut-email`.
 
-## Couverture des critères par les tâches
+## Couverture des critères
 
-| Critère | Tâche | État du code |
+Les tâches ayant été supprimées de GitHub, la couverture se lit directement
+critère par critère.
+
+| Issue | Critère | État du code |
 |---|---|---|
-| US-1 CA1, CA3 | TASK-2 (#5) | ✅ |
-| US-1 CA2 | TASK-6 | ⚠️ manque date de naissance et code postal |
-| US-1 CA4 | TASK-7 | ❌ |
-| US-1 CA5 | TASK-6 | ❌ |
-| US-1 CA6, ST3, ST4 | TASK-5 | ✅ |
-| US-1 ST1 | TASK-3 (#6) | ✅ |
-| US-1 ST2 | TASK-4 (#7) | ✅ |
-| US-2 CA1 | TASK-2 (#5) | ✅ |
-| US-2 CA2, CA3, CA5, ST1 | TASK-4 (#7) | ✅ |
-| US-2 CA4 (déconnexion) | TASK-4 (#7) | ✅ |
-| US-2 ST2 | TASK-3 (#6) | ✅ |
-| US-3 CA1 → CA4, ST1 | TASK-8 | ✅ |
-| EPIC-0 | TASK-1, 9, 10, 11, 12 | ✅ |
+| #2 US-1 | CA1, CA3 | ✅ validation e-mail et message de confirmation |
+| #2 US-1 | CA2 | ✅ nom, prénom, rôles, n° de rue, rue, complément, code postal, ville, date de naissance |
+| #2 US-1 | CA4 | ✅ écran dédié, distingue lien expiré et lien déjà consommé |
+| #2 US-1 | CA5 | ✅ date validée, **sans condition d'âge** |
+| #2 US-1 | CA6, ST3, ST4 | ✅ validation serveur, e-mail repris du jeton |
+| #2 US-1 | ST1, ST2 | ✅ |
+| #3 US-2 | CA1 → CA5, ST1, ST2 | ✅ dont cross-device et lien déjà consommé |
+| #9 US-3 | CA1 → CA4, ST1 | ✅ (ST1 durci en liste blanche, cf. ci-dessus) |
+| #1 EPIC | — | ✅ socle déployé, passerelle backend en place |
 
-**US-2 et US-3 validables. US-1 non**, tant que TASK-6 et TASK-7 ne sont pas
-terminées : il manque la date de naissance, le code postal, le contrôle de
-majorité et l'écran de lien expiré.
+**Les trois US sont couvertes par le code.**
+
+> ⚠️ **Le Worker déployé est en retard sur ce tableau** : il valide encore
+> `adressePostale`. Tant qu'il n'est pas redéployé, toute nouvelle inscription
+> est rejetée en `422`.
+
+---

@@ -35,8 +35,11 @@ export default function Inscription({ email, surTermine }) {
     prenom: '',
     dateNaissance: '',
     roles: [],
-    adressePostale: '',
+    numeroRue: '',
+    rue: '',
+    complementAdresse: '',
     codePostal: '',
+    ville: '',
   });
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(null);
@@ -48,8 +51,10 @@ export default function Inscription({ email, surTermine }) {
     champs.prenom.trim() &&
     champs.dateNaissance &&
     champs.roles.length &&
-    champs.adressePostale.trim().length >= 5 &&
-    codePostalValide;
+    champs.numeroRue.trim() &&
+    champs.rue.trim().length >= 2 &&
+    codePostalValide &&
+    champs.ville.trim();
 
   const modifier = (cle) => (e) =>
     setChamps((precedent) => ({ ...precedent, [cle]: e.target.value }));
@@ -151,33 +156,86 @@ export default function Inscription({ email, surTermine }) {
           ))}
         </fieldset>
 
-        <div className="space-y-2">
-          <Label htmlFor="adresse">Adresse postale</Label>
-          <Input id="adresse" required autoComplete="street-address"
-            placeholder="12 rue de la République, 69002 Lyon"
-            value={champs.adressePostale} onChange={modifier('adressePostale')} />
+        {/* Numero et rue sur une meme ligne : c'est ainsi qu'on ecrit une
+            adresse, et le numero n'a pas besoin de toute la largeur. */}
+        <div className="grid grid-cols-[6rem_1fr] gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="numeroRue">N°</Label>
+            <Input
+              id="numeroRue"
+              required
+              maxLength={10}
+              placeholder="12 bis"
+              value={champs.numeroRue}
+              onChange={modifier('numeroRue')}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rue">Rue</Label>
+            <Input
+              id="rue"
+              required
+              autoComplete="street-address"
+              placeholder="rue de la République"
+              value={champs.rue}
+              onChange={modifier('rue')}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="codePostal">Code postal</Label>
+          <Label htmlFor="complement">
+            Complément d’adresse <span className="font-normal normal-case">(facultatif)</span>
+          </Label>
           <Input
-            id="codePostal"
-            required
-            inputMode="numeric"
-            autoComplete="postal-code"
-            maxLength={5}
-            placeholder="69002"
-            value={champs.codePostal}
-            onChange={(e) =>
-              setChamps((p) => ({
-                ...p,
-                codePostal: e.target.value.replace(/\D/g, '').slice(0, 5),
-              }))
-            }
+            id="complement"
+            maxLength={100}
+            placeholder="Bât. B, appt 12"
+            value={champs.complementAdresse}
+            onChange={modifier('complementAdresse')}
           />
+        </div>
+
+        {/* Code postal et ville vont ensemble : les separer sur deux lignes
+            donnerait un formulaire plus long sans rien clarifier. */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-[7rem_1fr] gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="codePostal">Code postal</Label>
+              <Input
+                id="codePostal"
+                required
+                inputMode="numeric"
+                autoComplete="postal-code"
+                maxLength={5}
+                placeholder="69002"
+                value={champs.codePostal}
+                onChange={(e) =>
+                  setChamps((p) => ({
+                    ...p,
+                    codePostal: e.target.value.replace(/\D/g, '').slice(0, 5),
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ville">Ville</Label>
+              <Input
+                id="ville"
+                required
+                autoComplete="address-level2"
+                placeholder="Lyon"
+                value={champs.ville}
+                onChange={modifier('ville')}
+              />
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Les objets se récupèrent en main propre : le code postal sert à
-            calculer la proximité.
+            Les objets se récupèrent en main propre : votre ville et votre code
+            postal sont visibles par les autres membres. Votre adresse exacte,
+            elle, reste privée.
           </p>
         </div>
 

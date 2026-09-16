@@ -10,7 +10,7 @@
  * Volontairement sans dependance (pas de Workbox) : la J2 demande une PWA
  * installable, pas une strategie de cache elaboree.
  */
-const VERSION = 'don-v1';
+const VERSION = 'doneo-v1';
 const COQUILLE = '/index.html';
 
 self.addEventListener('install', (event) => {

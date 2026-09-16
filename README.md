@@ -1,16 +1,29 @@
-# m2gdp-g6-don — Dons entre particuliers (DON)
+# Donéo — Don caritatif par la vente d'objets
 
 Projet Gestion de Projet M2CIM 2026/2027 — Groupe 6.
 
-Plateforme de dons d'objets. Des **donateurs** cèdent gratuitement ce dont ils
-n'ont plus l'usage — mobilier, électroménager, matériel scolaire, vêtements.
-Des **bénéficiaires**, souvent des jeunes dans le besoin, étudiants qui
-s'installent ou personnes en difficulté, en font la demande et viennent les
-récupérer en main propre.
+Plateforme de **don caritatif par la vente d'objets**. Un **donateur** cède ce
+dont il n'a plus l'usage — mobilier, électroménager, matériel scolaire,
+vêtements — fixe une **participation solidaire** et choisit une **association**.
+Un **bénéficiaire** — étudiant, ou personne dans le besoin — verse cette
+participation et vient récupérer l'objet en main propre.
 
-**Aucun argent ne circule** : ni prix, ni enchère, ni commission. La plateforme
-est un intermédiaire de confiance qui met en relation deux populations dont les
-besoins se répondent, avec la proximité géographique pour contrainte principale.
+**Le donateur ne touche pas l'argent** : la totalité va à l'association qu'il a
+choisie. C'est ce qui fait de la vente un don. Le bénéficiaire, lui, repart avec
+l'objet **à petit prix**.
+
+La participation n'est pas un prix de marché. Elle reste **modeste** : ce qu'elle
+achète, ce n'est pas la valeur de l'objet, c'est le geste de soutenir une
+association. Pas d'enchère non plus — le montant est fixé une fois pour toutes
+par le donateur.
+
+Le donateur définit aussi un **créneau de retrait**, et l'**adresse exacte n'est
+révélée qu'une fois la participation validée** — avant, le bénéficiaire ne voit
+qu'un lieu approximatif (code postal et ville). Les rôles `donateur` et
+`beneficiaire` sont **cumulables** sur un même compte.
+
+> ⚠️ Le **paiement est simulé** : interface front uniquement, aucune transaction
+> ni aucun reversement réels.
 
 ## Structure du dépôt
 

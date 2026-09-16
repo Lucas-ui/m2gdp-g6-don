@@ -1,12 +1,12 @@
 {
   "projects": {
-    "default": "projet-bon-debarras"
+    "default": "doneo-3561b"
   },
   "targets": {
-    "projet-bon-debarras": {
+    "doneo-3561b": {
       "hosting": {
-        "landing": ["projet-bon-debarras"],
-        "app": ["projet-bon-debarras-app"]
+        "landing": ["doneo-vitrine"],
+        "app": ["doneo"]
       }
     }
   }

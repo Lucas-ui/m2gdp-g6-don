@@ -4,8 +4,8 @@ Connexion **sans mot de passe**. L'utilisateur saisit son e-mail, reçoit un lie
 clique : il est connecté. S'il n'avait pas de compte, il en obtient un et
 complète son profil dans la foulée.
 
-- Application : https://projet-bon-debarras-app.web.app
-- Backend : https://m2gdp-g6-don.guillaume-lorel.workers.dev
+- Application : https://doneo.web.app
+- Backend : https://doneo-api.guillaume-lorel.workers.dev
 
 ## Les trois écrans
 

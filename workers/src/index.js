@@ -1,5 +1,5 @@
 /**
- * Worker Cloudflare — Backend m2gdp-g6-don (dons entre particuliers)
+ * Worker Cloudflare — Backend Donéo (don caritatif par la vente d'objets)
  *
  * Passerelle entre le front et les services auto-geres. Le front n'ecrit
  * jamais dans Firestore directement : il presente un jeton d'identite Firebase,
@@ -99,16 +99,32 @@ function validerProfil(corps) {
   } else if (new Set(roles).size !== roles.length) {
     erreurs.push('Un rôle est présent en double.');
   }
-  if (texte(corps.adressePostale).length < 5) {
-    erreurs.push("L'adresse postale est obligatoire (5 caractères minimum).");
+  // Adresse decomposee, et non une chaine unique : cela permet de publier
+  // codePostal + ville dans l'annuaire sans jamais laisser sortir le numero et
+  // la rue. Voir specs/data-model.md, « Adresse a deux niveaux ».
+  if (texte(corps.numeroRue).length < 1) {
+    erreurs.push('Le numéro de rue est obligatoire.');
+  } else if (texte(corps.numeroRue).length > 10) {
+    erreurs.push('Le numéro de rue est trop long (10 max).');
   }
-  if (texte(corps.adressePostale).length > 200) {
-    erreurs.push("L'adresse postale est trop longue (200 max).");
+
+  if (texte(corps.rue).length < 2) {
+    erreurs.push('La rue est obligatoire.');
+  } else if (texte(corps.rue).length > 150) {
+    erreurs.push('Le nom de rue est trop long (150 max).');
+  }
+
+  // Facultatif : on ne controle que la longueur s'il est renseigne.
+  if (texte(corps.complementAdresse).length > 100) {
+    erreurs.push("Le complément d'adresse est trop long (100 max).");
   }
 
   if (!/^\d{5}$/.test(texte(corps.codePostal))) {
     erreurs.push('Le code postal doit comporter 5 chiffres.');
   }
+
+  if (texte(corps.ville).length < 1) erreurs.push('La ville est obligatoire.');
+  if (texte(corps.ville).length > 100) erreurs.push('Le nom de ville est trop long (100 max).');
 
   // Pas de condition d'age : la plateforme est ouverte aux mineurs. On verifie
   // seulement que la date existe et reste plausible.
@@ -142,7 +158,7 @@ export default {
     try {
       /* --- Healthcheck ------------------------------------------------ */
       if (pathname === '/api/health') {
-        return json({ status: 'ok', service: 'm2gdp-g6-don', ts: Date.now() }, 200, cors);
+        return json({ status: 'ok', service: 'doneo-api', ts: Date.now() }, 200, cors);
       }
 
       /* --- L'email a-t-il un compte ? --------------------------------- */
@@ -173,8 +189,12 @@ export default {
           );
           // 404 volontaire : le front s'en sert pour savoir qu'il doit
           // afficher le formulaire d'inscription.
+          //
+          // L'id n'est pas stocke dans le document — c'est la cle du document —
+          // mais le schema Profil le declare et le front en a besoin pour se
+          // reconnaitre dans l'annuaire. On le rajoute a la reponse.
           return profil
-            ? json(profil, 200, cors)
+            ? json({ id: utilisateur.sub, ...profil }, 200, cors)
             : json({ erreur: 'Profil inexistant.', inscriptionRequise: true }, 404, cors);
         }
 
@@ -198,15 +218,23 @@ export default {
               // Ordre normalise, pour que l'affichage soit stable d'un profil
               // a l'autre quel que soit l'ordre de cochage.
               roles: ROLES.filter((r) => corps.roles.includes(r)),
-              adressePostale: corps.adressePostale.trim(),
+              numeroRue: corps.numeroRue.trim(),
+              rue: corps.rue.trim(),
+              // Facultatif : absent du corps, il devient une chaine vide plutot
+              // qu'un undefined, que Firestore refuserait.
+              complementAdresse:
+                typeof corps.complementAdresse === 'string'
+                  ? corps.complementAdresse.trim()
+                  : '',
               codePostal: corps.codePostal.trim(),
+              ville: corps.ville.trim(),
               dateNaissance: corps.dateNaissance.trim(),
               photoUrl: typeof corps.photoUrl === 'string' ? corps.photoUrl : '',
               creeLe: existant?.creeLe || new Date().toISOString(),
               misAJourLe: new Date().toISOString(),
             },
           );
-          return json(profil, existant ? 200 : 201, cors);
+          return json({ id: utilisateur.sub, ...profil }, existant ? 200 : 201, cors);
         }
 
         return json({ erreur: 'Méthode non autorisée.' }, 405, cors);
@@ -218,14 +246,24 @@ export default {
         const tous = await listerCollection(jeton, env.FIREBASE_PROJECT_ID, 'utilisateurs');
         // Liste BLANCHE, et non liste noire : l'annuaire est lisible sans etre
         // connecte, donc tout champ ajoute au profil ne doit pas s'y retrouver
-        // par defaut. E-mail, adresse, code postal et date de naissance restent
-        // prives.
-        const publics = tous.map(({ id, prenom, nom, roles, photoUrl }) => ({
+        // par defaut.
+        //
+        // Ville et code postal y figurent volontairement : les objets se
+        // remettent en main propre, donc la localisation approximative est
+        // l'information utile de l'annuaire. On s'arrete la : l'adresse exacte,
+        // l'e-mail et la date de naissance restent prives.
+        //
+        // Les profils crees avant l'ajout du champ n'ont pas de ville ; on
+        // renvoie une chaine vide plutot qu'un trou, le front decide quoi
+        // afficher.
+        const publics = tous.map(({ id, prenom, nom, roles, photoUrl, codePostal, ville }) => ({
           id,
           prenom,
           nom,
           roles,
           photoUrl,
+          codePostal: codePostal || '',
+          ville: ville || '',
         }));
         return json({ utilisateurs: publics, total: publics.length }, 200, cors);
       }
