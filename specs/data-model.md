@@ -7,11 +7,11 @@ l'objet ; **l'argent, lui, va intégralement à l'association**.
 
 Trois acteurs, et il faut bien séparer qui reçoit quoi :
 
-| Acteur | Ce qu'il fait | Ce qu'il reçoit |
-|---|---|---|
-| **Donateur** | Cède un objet, fixe la participation solidaire, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
-| **Bénéficiaire** | Un étudiant, ou une personne dans le besoin. Verse la participation et vient chercher l'objet | **L'objet**, à petit prix |
-| **Association** | Choisie par le donateur parmi une liste | **L'argent** versé par le bénéficiaire |
+| Acteur           | Ce qu'il fait                                                                                        | Ce qu'il reçoit                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Donateur**     | Cède un objet, fixe la participation solidaire, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
+| **Bénéficiaire** | Un étudiant, ou une personne dans le besoin. Verse la participation et vient chercher l'objet        | **L'objet**, à petit prix                                                  |
+| **Association**  | Choisie par le donateur parmi une liste                                                              | **L'argent** versé par le bénéficiaire                                     |
 
 La participation n'est pas un prix de marché : elle reste **modeste**, pour que
 l'objet demeure accessible à qui en a besoin. Ce qu'elle achète, ce n'est pas la
@@ -20,6 +20,23 @@ valeur de l'objet — c'est le geste de soutenir une association.
 **Les rôles `donateur` et `beneficiaire` se cumulent** sur un même compte : on
 peut céder un objet au profit d'une association tout en en acquérant un autre.
 D'où un champ `roles` sous forme de **liste**, et non un type unique.
+
+## Perimetre Pre-J3 — scenario minimal
+
+Le scenario minimal couvre le parcours evalue de bout en bout :
+
+1. Un utilisateur cree son profil et choisit un ou plusieurs roles.
+2. Un donateur publie une annonce avec une participation, une association et
+   un creneau de retrait.
+3. Un beneficiaire recherche une annonce par texte, ville ou code postal et
+   consulte uniquement son adresse approximative.
+4. Le beneficiaire contacte le donateur, puis reserve l'objet.
+5. La participation est validee en mode test et l'adresse exacte devient
+   disponible dans la confirmation de reservation.
+
+Les favoris, la recherche par distance, le calendrier avance, les avis, le
+stockage de fichiers et les notifications sont hors scenario minimal. Ils sont
+reserves aux lots `SHOULD` et `COULD` de la roadmap.
 
 ```mermaid
 classDiagram
@@ -82,7 +99,10 @@ classDiagram
     class Conversation {
         +string id
         +string annonceId
+      +string donateurId
+      +string beneficiaireId
         +date creeLe
+      +date misAJourLe
     }
 
     class Message {
@@ -97,7 +117,8 @@ classDiagram
     Annonce "*" --> "1" Association : reverse à
     Annonce "1" --> "*" Reservation : reçoit
     Utilisateur "1" --> "*" Reservation : dépose (bénéficiaire)
-    Annonce "1" --> "1" Conversation : discute
+    Annonce "1" --> "*" Conversation : permet le contact
+    Utilisateur "1" --> "*" Conversation : participe
     Conversation "1" --> "*" Message : contient
     Utilisateur "1" --> "*" Message : envoie
 ```
@@ -130,13 +151,13 @@ classDiagram
 L'adresse n'est pas une chaîne unique : elle est éclatée en champs, ce qui
 permet de n'en publier qu'une partie et de préremplir une annonce sans ressaisie.
 
-| Champ | Exemple | Visibilité |
-|---|---|---|
-| `numeroRue` | `14 bis` | 🔒 privé |
-| `rue` | `rue de la Charité` | 🔒 privé |
-| `complementAdresse` | `Bât. B, appt 12` | 🔒 privé — facultatif |
-| `codePostal` | `69002` | 🌍 **public** |
-| `ville` | `Lyon` | 🌍 **public** |
+| Champ               | Exemple             | Visibilité            |
+| ------------------- | ------------------- | --------------------- |
+| `numeroRue`         | `14 bis`            | 🔒 privé              |
+| `rue`               | `rue de la Charité` | 🔒 privé              |
+| `complementAdresse` | `Bât. B, appt 12`   | 🔒 privé — facultatif |
+| `codePostal`        | `69002`             | 🌍 **public**         |
+| `ville`             | `Lyon`              | 🌍 **public**         |
 
 `numeroRue` est une **chaîne**, pas un nombre : « 14 bis », « 3-5 » et « 12 ter »
 sont des numéros valides.
@@ -165,13 +186,13 @@ Le paiement **passe par un vrai prestataire** (Stripe ou équivalent), mais
 paiement, une confirmation, une référence de transaction — sans qu'aucun euro ne
 change de main, et sans le moindre reversement réel à l'association.
 
-| Champ | Rôle |
-|---|---|
+| Champ                   | Rôle                                                                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `participationDemandee` | La **vraie** participation, celle que voit le bénéficiaire. Recopiée depuis `Annonce.participation` au moment de la réservation, pour qu'une modification ultérieure ne réécrive pas l'historique |
-| `montantDebite` | Ce qui est réellement prélevé : **0** |
-| `statutPaiement` | `en_attente` → `paye` (ou `echoue`). Le passage à `paye` est ce qui débloque l'adresse exacte |
-| `referencePaiement` | Identifiant renvoyé par le prestataire, preuve que le tunnel a bien été parcouru |
-| `environnementPaiement` | `test`. Rend explicite en base qu'aucune transaction réelle n'a eu lieu |
+| `montantDebite`         | Ce qui est réellement prélevé : **0**                                                                                                                                                             |
+| `statutPaiement`        | `en_attente` → `paye` (ou `echoue`). Le passage à `paye` est ce qui débloque l'adresse exacte                                                                                                     |
+| `referencePaiement`     | Identifiant renvoyé par le prestataire, preuve que le tunnel a bien été parcouru                                                                                                                  |
+| `environnementPaiement` | `test`. Rend explicite en base qu'aucune transaction réelle n'a eu lieu                                                                                                                           |
 
 > ⚠️ **Limite technique à connaître.** Stripe refuse les paiements d'un montant
 > nul (minimum de l'ordre de 0,50 €). Deux façons de tenir « montant payé = 0 » :

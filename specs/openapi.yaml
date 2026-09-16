@@ -9,7 +9,9 @@ info:
     dans le besoin, verse cette participation et repart avec l'objet à petit
     prix, tandis que l'argent va intégralement à l'association. Adresse exacte
     révélée après validation de la participation (paiement réel, mais en mode
-    test). Squelette — à enrichir US par US.
+    test). Contrat du scénario minimal Pré-J3 : inscription, publication, recherche,
+    réservation et prise de contact. Les options avancées sont documentées
+    séparément dans la roadmap et ne sont pas nécessaires au parcours nominal.
 
 paths:
   /api/health:
@@ -160,6 +162,102 @@ paths:
         "401": { description: "Authentification requise" }
         "422": { description: "Champs invalides" }
 
+  /api/annonces/{id}:
+    get:
+      tags: ["Annonces"]
+      summary: "Consulter une annonce"
+      description: >
+        Retourne la fiche publique de l'annonce. L'adresse exacte reste absente
+        tant que la participation n'est pas validee.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "Fiche publique de l'annonce"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnoncePublique" }
+        "404": { description: "Annonce introuvable" }
+
+  /api/annonces/{id}/conversation:
+    post:
+      tags: ["Conversations"]
+      summary: "Contacter le donateur"
+      description: >
+        Cree ou retrouve la conversation entre le beneficiaire connecte et le
+        donateur de l'annonce. Le premier message est facultatif a la creation.
+      security: [{ jetonFirebase: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageSoumis" }
+      responses:
+        "201":
+          description: "Conversation creee"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Conversation" }
+        "401": { description: "Authentification requise" }
+        "404": { description: "Annonce introuvable" }
+
+  /api/conversations/{id}/messages:
+    get:
+      tags: ["Conversations"]
+      summary: "Lire les messages d'une conversation"
+      security: [{ jetonFirebase: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: "Messages de la conversation"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [messages]
+                properties:
+                  messages:
+                    type: array
+                    items: { $ref: "#/components/schemas/Message" }
+        "401": { description: "Authentification requise" }
+        "403": { description: "Utilisateur absent de la conversation" }
+        "404": { description: "Conversation introuvable" }
+    post:
+      tags: ["Conversations"]
+      summary: "Envoyer un message"
+      security: [{ jetonFirebase: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageSoumis" }
+      responses:
+        "201":
+          description: "Message envoye"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+        "401": { description: "Authentification requise" }
+        "403": { description: "Utilisateur absent de la conversation" }
+        "404": { description: "Conversation introuvable" }
+
   /api/annonces/{id}/reservation:
     post:
       tags: ["Réservations"]
@@ -192,8 +290,17 @@ paths:
                 type: object
                 properties:
                   statutPaiement: { type: string, enum: [paye] }
-                  participationDemandee: { type: number, description: "La participation réellement affichée au bénéficiaire" }
-                  montantDebite: { type: number, enum: [0], description: "Toujours 0 : mode test" }
+                  participationDemandee:
+                    {
+                      type: number,
+                      description: "La participation réellement affichée au bénéficiaire",
+                    }
+                  montantDebite:
+                    {
+                      type: number,
+                      enum: [0],
+                      description: "Toujours 0 : mode test",
+                    }
                   referencePaiement: { type: string }
                   numeroRue:
                     type: string
@@ -236,7 +343,20 @@ components:
     # schema de reponse sur une route de liste : voir AnnoncePublique.
     AnnonceSoumise:
       type: object
-      required: [titre, description, categorie, etat, participation, associationId, creneauRetrait, numeroRue, rue, codePostal, ville]
+      required:
+        [
+          titre,
+          description,
+          categorie,
+          etat,
+          participation,
+          associationId,
+          creneauRetrait,
+          numeroRue,
+          rue,
+          codePostal,
+          ville,
+        ]
       properties:
         titre:
           type: string
@@ -248,7 +368,8 @@ components:
           description: "Description de l'objet 📝"
         categorie:
           type: string
-          enum: [mobilier, electromenager, electronique, vetements, materiel, autre]
+          enum:
+            [mobilier, electromenager, electronique, vetements, materiel, autre]
           description: "Catégorie de l'objet 📦"
         etat:
           type: string
@@ -302,7 +423,8 @@ components:
         id: { type: string }
         titre: { type: string }
         description: { type: string }
-        categorie: { $ref: "#/components/schemas/AnnonceSoumise/properties/categorie" }
+        categorie:
+          { $ref: "#/components/schemas/AnnonceSoumise/properties/categorie" }
         etat: { $ref: "#/components/schemas/AnnonceSoumise/properties/etat" }
         participation:
           type: number
@@ -375,13 +497,46 @@ components:
             n'a eu lieu — à ne jamais basculer sur `production` dans ce projet.
         creeLe: { type: string, format: date-time, readOnly: true }
 
+    Conversation:
+      type: object
+      required: [id, annonceId, donateurId, beneficiaireId, creeLe]
+      properties:
+        id: { type: string, readOnly: true }
+        annonceId: { type: string, readOnly: true }
+        donateurId: { type: string, readOnly: true }
+        beneficiaireId: { type: string, readOnly: true }
+        creeLe: { type: string, format: date-time, readOnly: true }
+        misAJourLe: { type: string, format: date-time, readOnly: true }
+
+    MessageSoumis:
+      type: object
+      required: [contenu]
+      properties:
+        contenu:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: "Message envoye au participant de la conversation"
+
+    Message:
+      allOf:
+        - $ref: "#/components/schemas/MessageSoumis"
+        - type: object
+          required: [id, conversationId, auteurId, creeLe]
+          properties:
+            id: { type: string, readOnly: true }
+            conversationId: { type: string, readOnly: true }
+            auteurId: { type: string, readOnly: true }
+            creeLe: { type: string, format: date-time, readOnly: true }
+
     # --- Profils ------------------------------------------------------------
     # L'adresse est decomposee : cela permet de publier codePostal + ville sans
     # jamais laisser sortir le numero et la rue. Voir specs/data-model.md.
 
     ProfilSoumis:
       type: object
-      required: [nom, prenom, roles, numeroRue, rue, codePostal, ville, dateNaissance]
+      required:
+        [nom, prenom, roles, numeroRue, rue, codePostal, ville, dateNaissance]
       properties:
         nom: { type: string, minLength: 1, maxLength: 80 }
         prenom: { type: string, minLength: 1, maxLength: 80 }
