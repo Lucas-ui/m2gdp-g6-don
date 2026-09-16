@@ -1,24 +1,24 @@
-import { useState } from 'react';
-import { Loader2, UserRound } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Checkbox } from '@/components/ui/checkbox.jsx';
-import { enregistrerProfil } from '@/lib/api.js';
+import { useState } from "react";
+import { Heart, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
+import { enregistrerProfil } from "@/lib/api.js";
 
 /** Aujourd'hui, borne haute du champ : on ne naît pas dans le futur. */
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
 const ROLES = [
   {
-    valeur: 'donateur',
-    titre: 'Donateur',
-    detail: 'Je donne des objets dont je n’ai plus l’usage',
+    valeur: "donateur",
+    titre: "Donateur",
+    detail: "Je donne des objets dont je n’ai plus l’usage",
   },
   {
-    valeur: 'beneficiaire',
-    titre: 'Bénéficiaire',
-    detail: 'Je cherche des objets dont j’ai besoin',
+    valeur: "beneficiaire",
+    titre: "Bénéficiaire",
+    detail: "Je cherche des objets dont j’ai besoin",
   },
 ];
 
@@ -31,15 +31,15 @@ const ROLES = [
  */
 export default function Inscription({ email, surTermine }) {
   const [champs, setChamps] = useState({
-    nom: '',
-    prenom: '',
-    dateNaissance: '',
+    nom: "",
+    prenom: "",
+    dateNaissance: "",
     roles: [],
-    numeroRue: '',
-    rue: '',
-    complementAdresse: '',
-    codePostal: '',
-    ville: '',
+    numeroRue: "",
+    rue: "",
+    complementAdresse: "",
+    codePostal: "",
+    ville: "",
   });
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(null);
@@ -80,36 +80,54 @@ export default function Inscription({ email, surTermine }) {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 pb-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Formulaire d’inscription</h1>
-        <p className="text-sm text-muted-foreground">
-          Vous êtes identifié(e) comme <strong className="text-foreground">{email}</strong>.
-          Complétez votre profil pour terminer.
+        <div className="mb-5 flex items-center justify-between text-xs font-bold text-muted-foreground">
+          <span className="text-primary">Profil</span>
+          <span>2/3</span>
+        </div>
+        <h1 className="doneo-title text-3xl tracking-tight">
+          Finalisez votre profil
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Vous êtes identifié(e) comme{" "}
+          <strong className="text-foreground">{email}</strong>. Complétez votre
+          profil pour terminer.
         </p>
       </header>
 
       <form onSubmit={soumettre} className="space-y-4" noValidate>
         {/* Emplacement photo : l'envoi de fichier vers R2 viendra plus tard. */}
         <div className="flex justify-center">
-          <div
-            className="flex size-20 items-center justify-center rounded-full bg-muted"
-            aria-hidden="true"
-          >
-            <UserRound className="size-9 text-muted-foreground" />
+          <div className="doneo-logo" aria-hidden="true">
+            <Heart className="size-9 fill-current" />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="nom">Nom</Label>
-          <Input id="nom" required autoComplete="family-name" placeholder="Dupont"
-            value={champs.nom} onChange={modifier('nom')} />
+          <Input
+            id="nom"
+            required
+            autoComplete="family-name"
+            placeholder="Dupont"
+            className="doneo-input"
+            value={champs.nom}
+            onChange={modifier("nom")}
+          />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="prenom">Prénom</Label>
-          <Input id="prenom" required autoComplete="given-name" placeholder="Marie"
-            value={champs.prenom} onChange={modifier('prenom')} />
+          <Input
+            id="prenom"
+            required
+            autoComplete="given-name"
+            placeholder="Marie"
+            className="doneo-input"
+            value={champs.prenom}
+            onChange={modifier("prenom")}
+          />
         </div>
 
         <div className="space-y-2">
@@ -121,7 +139,7 @@ export default function Inscription({ email, surTermine }) {
             autoComplete="bday"
             max={aujourdhui()}
             value={champs.dateNaissance}
-            onChange={modifier('dateNaissance')}
+            onChange={modifier("dateNaissance")}
           />
         </div>
 
@@ -138,8 +156,7 @@ export default function Inscription({ email, surTermine }) {
             <label
               key={role.valeur}
               htmlFor={role.valeur}
-              className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 has-checked:border-foreground"
-            >
+              className="flex cursor-pointer items-start gap-3 rounded-2xl border bg-card/70 p-4 transition-colors has-checked:border-primary has-checked:bg-primary/5">
               <Checkbox
                 id={role.valeur}
                 checked={champs.roles.includes(role.valeur)}
@@ -166,8 +183,9 @@ export default function Inscription({ email, surTermine }) {
               required
               maxLength={10}
               placeholder="12 bis"
+              className="doneo-input"
               value={champs.numeroRue}
-              onChange={modifier('numeroRue')}
+              onChange={modifier("numeroRue")}
             />
           </div>
 
@@ -178,22 +196,25 @@ export default function Inscription({ email, surTermine }) {
               required
               autoComplete="street-address"
               placeholder="rue de la République"
+              className="doneo-input"
               value={champs.rue}
-              onChange={modifier('rue')}
+              onChange={modifier("rue")}
             />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="complement">
-            Complément d’adresse <span className="font-normal normal-case">(facultatif)</span>
+            Complément d’adresse{" "}
+            <span className="font-normal normal-case">(facultatif)</span>
           </Label>
           <Input
             id="complement"
             maxLength={100}
             placeholder="Bât. B, appt 12"
+            className="doneo-input"
             value={champs.complementAdresse}
-            onChange={modifier('complementAdresse')}
+            onChange={modifier("complementAdresse")}
           />
         </div>
 
@@ -210,11 +231,12 @@ export default function Inscription({ email, surTermine }) {
                 autoComplete="postal-code"
                 maxLength={5}
                 placeholder="69002"
+                className="doneo-input"
                 value={champs.codePostal}
                 onChange={(e) =>
                   setChamps((p) => ({
                     ...p,
-                    codePostal: e.target.value.replace(/\D/g, '').slice(0, 5),
+                    codePostal: e.target.value.replace(/\D/g, "").slice(0, 5),
                   }))
                 }
               />
@@ -227,8 +249,9 @@ export default function Inscription({ email, surTermine }) {
                 required
                 autoComplete="address-level2"
                 placeholder="Lyon"
+                className="doneo-input"
                 value={champs.ville}
-                onChange={modifier('ville')}
+                onChange={modifier("ville")}
               />
             </div>
           </div>
@@ -245,9 +268,14 @@ export default function Inscription({ email, surTermine }) {
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={envoi || !complet}>
-          {envoi && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-          {envoi ? 'Enregistrement…' : 'S’inscrire'}
+        <Button
+          type="submit"
+          className="doneo-primary-button w-full"
+          disabled={envoi || !complet}>
+          {envoi && (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          )}
+          {envoi ? "Enregistrement…" : "S’inscrire"}
         </Button>
       </form>
     </section>

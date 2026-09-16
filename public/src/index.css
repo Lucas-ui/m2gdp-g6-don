@@ -1,52 +1,31 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@700;800;900&display=swap");
 @import "tailwindcss";
 
-/* Jetons de theme shadcn/ui.
-   Valeurs neutres volontairement provisoires : la charte graphique arrive avec
-   les maquettes UX. Ne remplacer QUE ces variables le moment venu, le reste du
-   code n'a pas a bouger. */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-  }
+  --radius: 1.15rem;
+  --doneo-violet: #9b4ddb;
+  --doneo-lavande: #e7d6f5;
+  --doneo-rose: #e23c8e;
+  --doneo-ardoise: #2f4f5c;
+  --doneo-lilas: #f7f2fc;
+  --background: var(--doneo-lilas);
+  --foreground: var(--doneo-ardoise);
+  --card: #ffffff;
+  --card-foreground: var(--doneo-ardoise);
+  --popover: #ffffff;
+  --popover-foreground: var(--doneo-ardoise);
+  --primary: 0.57 0.22 292;
+  --primary-foreground: 0.99 0.01 300;
+  --secondary: 0.91 0.045 186;
+  --secondary-foreground: 0.29 0.07 220;
+  --muted: 0.93 0.035 300;
+  --muted-foreground: 0.48 0.045 255;
+  --accent: 0.88 0.09 292;
+  --accent-foreground: 0.32 0.1 292;
+  --destructive: 0.62 0.2 25;
+  --border: 0.88 0.045 292;
+  --input: 0.88 0.045 292;
+  --ring: 0.65 0.18 292;
 }
 
 @theme inline {
@@ -79,10 +58,69 @@
     border-color: var(--border);
   }
   body {
-    background-color: var(--background);
+    min-width: 320px;
+    background: radial-gradient(
+      circle at 50% -10%,
+      #ffffff 0,
+      var(--doneo-lilas) 42rem
+    );
     color: var(--foreground);
+    font-family: "Inter", sans-serif;
     /* encoches et barre de gestes des mobiles */
     padding: env(safe-area-inset-top) env(safe-area-inset-right)
       env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+@layer components {
+  .doneo-shell {
+    min-height: 100dvh;
+    background: linear-gradient(
+      180deg,
+      #fff 0%,
+      var(--doneo-lilas) 38%,
+      #f1e5fa 100%
+    );
+  }
+
+  .doneo-brand {
+    color: var(--doneo-violet);
+    font-family: "Nunito", "Asgard", sans-serif;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .doneo-title {
+    color: var(--doneo-ardoise);
+    font-family: "Nunito", "Asgard", sans-serif;
+    font-weight: 900;
+  }
+
+  .doneo-logo {
+    display: grid;
+    place-items: center;
+    width: 4.25rem;
+    height: 4.25rem;
+    border-radius: 1.55rem;
+    color: var(--doneo-ardoise);
+    background: var(--doneo-lavande);
+    box-shadow: 0 0.8rem 1.8rem rgb(155 77 219 / 18%);
+  }
+
+  .doneo-input {
+    height: 3rem;
+    border-color: transparent;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 0.35rem 1rem rgb(47 79 92 / 7%);
+  }
+
+  .doneo-primary-button {
+    min-height: 3rem;
+    border-radius: 1rem;
+    background: var(--doneo-violet);
+    box-shadow: 0 0.7rem 1.2rem rgb(155 77 219 / 24%);
+    font-weight: 800;
   }
 }
