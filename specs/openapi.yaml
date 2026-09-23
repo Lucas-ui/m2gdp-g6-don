@@ -1,35 +1,60 @@
 openapi: "3.0.3"
 info:
   title: "Donéo — API de vente caritative d'objets"
-  version: "0.2.0"
+  version: "0.3.0"
   description: >
     API de la plateforme de don caritatif via la vente d'objets (groupe 6).
     Le donateur cède un objet, fixe une participation solidaire — un montant
     modeste — et choisit une association. Le bénéficiaire, étudiant ou personne
     dans le besoin, verse cette participation et repart avec l'objet à petit
-    prix, tandis que l'argent va intégralement à l'association. Adresse exacte
-    révélée après validation de la participation (paiement réel, mais en mode
-    test). Contrat du scénario minimal Pré-J3 : inscription, publication, recherche,
-    réservation et prise de contact. Les options avancées sont documentées
-    séparément dans la roadmap et ne sont pas nécessaires au parcours nominal.
+    prix, tandis que l'argent va intégralement à l'association.
+
+
+    **Version 0.3** — intègre les retours clients du 17/09/2026 : médias,
+    création d'annonce assistée par IA, contexte local, messagerie actionnable,
+    avis, favoris, recherche avancée ; et deux règles de l'équipe : commentaires
+    publics sur les annonces, liste d'attente en cas de désistement. Le modèle
+    de données et ses règles sont détaillés dans `specs/data-model.md`.
+
+
+    **Changement de rupture** : on ne paie plus en réservant, mais quand l'objet
+    vous est proposé. `POST /api/annonces/{id}/reservation` devient
+    `POST /api/annonces/{id}/reservations` (demande), suivi de
+    `POST /api/reservations/{id}/paiement` (confirmation). Aucune de ces routes
+    n'étant encore codée, la rupture est sans conséquence.
+
+
+    Seules les routes marquées « Déjà en ligne » sont implémentées aujourd'hui.
+
+tags:
+  - name: "Profils"
+  - name: "Référentiels"
+  - name: "Médias"
+  - name: "IA"
+  - name: "Annonces"
+  - name: "Données locales"
+  - name: "Favoris"
+  - name: "Recherches"
+  - name: "Commentaires"
+  - name: "Conversations"
+  - name: "Réservations"
+  - name: "Avis"
 
 paths:
   /api/health:
     get:
-      summary: "Healthcheck"
+      summary: "Healthcheck — Déjà en ligne"
       responses:
         "200":
           description: "Service en ligne"
 
-  # --- Authentification et profil ------------------------------------------
-  # Ces trois routes sont DEJA implementees et deployees (POC J2). Elles avaient
-  # disparu de ce fichier lors du pivot : on les redocumente telles qu'elles
-  # fonctionnent aujourd'hui.
+  # --- Authentification et profil -------------------------------------------
+  # Ces routes sont DEJA implementees et deployees (POC J2).
 
   /api/auth/statut-email:
     post:
       tags: ["Profils"]
-      summary: "✉️ L'adresse a-t-elle déjà un compte ?"
+      summary: "✉️ L'adresse a-t-elle déjà un compte ? — Déjà en ligne"
       description: >
         Sert uniquement à adapter le message affiché (« lien de connexion » ou
         « lien pour créer votre compte »). Firebase n'envoie qu'un seul type de
@@ -57,7 +82,7 @@ paths:
   /api/profil:
     get:
       tags: ["Profils"]
-      summary: "👤 Profil de l'utilisateur connecté"
+      summary: "👤 Profil de l'utilisateur connecté — Déjà en ligne"
       security: [{ jetonFirebase: [] }]
       responses:
         "200":
@@ -65,14 +90,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Profil" }
-        "401": { description: "Authentification requise" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
         "404":
           description: >
             Profil inexistant. 404 volontaire : le front s'en sert pour savoir
             qu'il doit afficher le formulaire d'inscription.
     put:
       tags: ["Profils"]
-      summary: "💾 Créer ou mettre à jour son profil"
+      summary: "💾 Créer ou mettre à jour son profil — Déjà en ligne"
       description: >
         L'e-mail est repris du jeton vérifié, jamais du corps de la requête :
         sinon n'importe qui pourrait s'enregistrer sous l'adresse d'un autre.
@@ -85,13 +110,13 @@ paths:
       responses:
         "200": { description: "Profil mis à jour" }
         "201": { description: "Profil créé" }
-        "401": { description: "Authentification requise" }
-        "422": { description: "Champs invalides" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "422": { $ref: "#/components/responses/Invalide" }
 
   /api/utilisateurs:
     get:
       tags: ["Profils"]
-      summary: "📇 Annuaire public des inscrits"
+      summary: "📇 Annuaire public des inscrits — Déjà en ligne"
       description: >
         Liste BLANCHE : seuls les champs explicitement publics sortent. E-mail
         et adresse exacte ne sont jamais renvoyés. Tout champ ajouté au profil
@@ -109,116 +134,676 @@ paths:
                     items: { $ref: "#/components/schemas/ProfilPublic" }
                   total: { type: integer }
 
-  # --- Métier : vente caritative --------------------------------------------
-
-  /api/associations:
+  /api/utilisateurs/{id}:
     get:
-      tags: ["Associations"]
-      summary: "❤️ Lister les associations bénéficiaires"
+      tags: ["Profils"]
+      summary: "🪪 Profil public d'un membre"
+      description: >
+        Même liste blanche que l'annuaire, enrichie de la note moyenne et du
+        nombre d'avis reçus.
+      parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
         "200":
-          description: "Liste des associations sélectionnables par le donateur"
+          description: "Profil public"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfilPublic" }
+        "404": { $ref: "#/components/responses/Introuvable" }
 
-  /api/annonces:
+  /api/utilisateurs/{id}/avis:
     get:
-      summary: "🔍 Rechercher des annonces"
+      tags: ["Avis"]
+      summary: "⭐ Avis reçus par un membre"
       parameters:
-        - name: q
-          in: query
-          description: "Recherche texte 🔤"
-          schema: { type: string }
-        - name: codePostal
-          in: query
-          description: "Filtre par code postal 📍"
-          schema: { type: string }
+        - { $ref: "#/components/parameters/Id" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/ParPage" }
       responses:
         "200":
-          description: "Liste d'annonces (adresse approximative uniquement)"
+          description: "Avis reçus, du plus récent au plus ancien"
           content:
             application/json:
               schema:
                 type: object
+                required: [avis, total]
                 properties:
-                  annonces:
+                  avis:
                     type: array
-                    items: { $ref: "#/components/schemas/AnnoncePublique" }
+                    items: { $ref: "#/components/schemas/Avis" }
                   total: { type: integer }
-    post:
-      tags: ["Annonces"]
-      summary: "➕ Publier une annonce (donateur)"
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  # --- Référentiels -----------------------------------------------------------
+
+  /api/categories:
+    get:
+      tags: ["Référentiels"]
+      summary: "🗂️ Arbre des catégories"
       description: >
-        Le donateur est repris du jeton vérifié, pas du corps : `donateurId` ne
-        se déclare pas soi-même.
+        Deux niveaux : les catégories principales, chacune avec ses
+        sous-catégories. Remplace l'énumération figée de la version 0.2 : la
+        liste vit en base, et le barème en exige 10+ principales avec 5+
+        sous-catégories chacune.
+      responses:
+        "200":
+          description: "Catégories principales, avec leurs sous-catégories"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [categories]
+                properties:
+                  categories:
+                    type: array
+                    items: { $ref: "#/components/schemas/Categorie" }
+
+  /api/associations:
+    get:
+      tags: ["Référentiels"]
+      summary: "❤️ Lister les associations bénéficiaires"
+      description: >
+        Liste alimentée depuis le Répertoire national des associations, filtrée
+        sur la Métropole de Lyon.
+      parameters:
+        - name: q
+          in: query
+          description: "Recherche dans le nom et la présentation"
+          schema: { type: string }
+        - name: thematique
+          in: query
+          schema: { type: string }
+        - name: codePostal
+          in: query
+          schema: { type: string, pattern: "^[0-9]{5}$" }
+      responses:
+        "200":
+          description: "Associations sélectionnables par le donateur"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [associations]
+                properties:
+                  associations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Association" }
+
+  # --- Médias -----------------------------------------------------------------
+
+  /api/medias:
+    post:
+      tags: ["Médias"]
+      summary: "📷 Téléverser une photo, une vidéo ou un enregistrement vocal"
+      description: >
+        Le téléversement est séparé de la publication : on envoie le fichier, on
+        reçoit un identifiant, puis on le cite dans une annonce ou un message.
+        C'est ce qui permet la capture directe depuis l'appareil. Stockage sur
+        R2. Un média jamais rattaché au bout de 24 h est purgé.
+      security: [{ jetonFirebase: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fichier]
+              properties:
+                fichier:
+                  type: string
+                  format: binary
+                  description: >
+                    Photo : JPEG, PNG, WebP, 5 Mo. Vidéo : MP4, WebM, 30 s et
+                    25 Mo. Audio : WebM, Ogg, M4A, 60 s et 5 Mo.
+      responses:
+        "201":
+          description: "Média enregistré"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Media" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "413": { description: "Fichier trop volumineux ou trop long" }
+        "415": { description: "Format non pris en charge" }
+
+  /api/medias/{id}:
+    delete:
+      tags: ["Médias"]
+      summary: "🗑️ Supprimer un média non rattaché"
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: "Média supprimé" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409":
+          description: "Média déjà rattaché à une annonce ou un message"
+
+  # --- IA -----------------------------------------------------------------------
+
+  /api/ia/brouillon-annonce:
+    post:
+      tags: ["IA"]
+      summary: "✨ Générer un brouillon d'annonce à partir d'une phrase ou d'une photo"
+      description: >
+        L'IA rédige un brouillon, elle ne publie jamais : la réponse préremplit
+        le formulaire, que le donateur corrige puis publie par
+        `POST /api/annonces`.
+
+
+        Le Worker garde la clé du service tiers (OpenRouter) et applique un
+        quota par utilisateur dans D1. La sortie du modèle est validée comme
+        n'importe quelle saisie : tout champ invalide — catégorie inconnue,
+        créneau incohérent — est écarté et listé dans `champsIncertains`.
+        Aucune adresse ne doit figurer dans la description générée : le Worker
+        vérifie que ni `numeroRue` ni `rue` du profil n'y apparaissent.
       security: [{ jetonFirebase: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/AnnonceSoumise"
+            schema: { $ref: "#/components/schemas/BrouillonDemande" }
+      responses:
+        "200":
+          description: "Brouillon à relire et compléter"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BrouillonAnnonce" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Réservé aux comptes ayant le rôle `donateur`"
+        "422": { $ref: "#/components/responses/Invalide" }
+        "429": { $ref: "#/components/responses/TropDeRequetes" }
+        "502":
+          description: >
+            Service IA indisponible. Le front bascule sur le formulaire manuel :
+            l'IA accélère la saisie, elle ne la conditionne pas.
+
+  # --- Annonces -------------------------------------------------------------------
+
+  /api/annonces:
+    get:
+      tags: ["Annonces"]
+      summary: "🔍 Rechercher et trier des annonces"
+      description: >
+        Public. Avec un jeton, chaque annonce indique en plus si elle figure
+        dans les favoris de l'utilisateur. Par défaut, seules les annonces
+        `disponible` et `reserve` sont renvoyées — une annonce réservée accepte
+        encore des inscriptions en liste d'attente.
+
+
+        La proximité se calcule sur la **position approchée** de l'annonce, et
+        la distance renvoyée est **arrondie à 0,5 km** : une distance exacte,
+        interrogée depuis trois points, suffirait à trianguler un domicile.
+      security: [{}, { jetonFirebase: [] }]
+      parameters:
+        - name: q
+          in: query
+          description: "Recherche texte dans le titre et la description"
+          schema: { type: string }
+        - name: categorieId
+          in: query
+          schema: { type: string }
+        - name: sousCategorieId
+          in: query
+          schema: { type: string }
+        - name: etat
+          in: query
+          schema: { $ref: "#/components/schemas/EtatObjet" }
+        - name: codePostal
+          in: query
+          schema: { type: string, pattern: "^[0-9]{5}$" }
+        - name: ville
+          in: query
+          schema: { type: string }
+        - name: latitude
+          in: query
+          description: "Position de celui qui cherche. Jamais stockée."
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: longitude
+          in: query
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - name: rayonKm
+          in: query
+          schema: { type: number, minimum: 0.5, maximum: 50, default: 10 }
+        - name: participationMax
+          in: query
+          schema: { type: number, minimum: 0 }
+        - name: creneauApres
+          in: query
+          description: "Ne garder que les créneaux qui commencent après cette date"
+          schema: { type: string, format: date-time }
+        - name: disponiblesSeulement
+          in: query
+          description: "Exclure les annonces déjà réservées"
+          schema: { type: boolean, default: false }
+        - name: tri
+          in: query
+          description: >
+            `proximite` exige `latitude` et `longitude`, ou un `codePostal` dont
+            on prend le centroïde ; sinon 422.
+          schema:
+            type: string
+            enum: [recent, proximite, participation, creneau]
+            default: recent
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/ParPage" }
+      responses:
+        "200":
+          description: "Page d'annonces — adresse approchée uniquement"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PageAnnonces" }
+        "422": { $ref: "#/components/responses/Invalide" }
+    post:
+      tags: ["Annonces"]
+      summary: "➕ Publier une annonce (donateur)"
+      description: >
+        Le donateur est repris du jeton vérifié, pas du corps : `donateurId` ne
+        se déclare pas soi-même. À la publication, le Worker géocode l'adresse
+        complète — coordonnées exactes, privées — et en déduit le quartier IRIS
+        et la position approchée, publics.
+      security: [{ jetonFirebase: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnnonceSoumise" }
       responses:
         "201":
           description: "Annonce créée"
-        "401": { description: "Authentification requise" }
-        "422": { description: "Champs invalides" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnoncePublique" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Réservé aux comptes ayant le rôle `donateur`, ou média d'autrui cité"
+        "422": { $ref: "#/components/responses/Invalide" }
 
   /api/annonces/{id}:
     get:
       tags: ["Annonces"]
-      summary: "Consulter une annonce"
+      summary: "📄 Consulter une annonce"
       description: >
-        Retourne la fiche publique de l'annonce. L'adresse exacte reste absente
-        tant que la participation n'est pas validee.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        Fiche publique. L'adresse exacte n'y figure jamais, pour personne : le
+        bénéficiaire d'une réservation confirmée la lit sur la réservation, le
+        donateur sur `GET /api/annonces/{id}/edition`. Le schéma public reste
+        ainsi une liste blanche, sans champ privé à masquer selon l'appelant.
+      security: [{}, { jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
         "200":
           description: "Fiche publique de l'annonce"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AnnoncePublique" }
-        "404": { description: "Annonce introuvable" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+    patch:
+      tags: ["Annonces"]
+      summary: "✏️ Modifier son annonce (donateur)"
+      description: >
+        Dès qu'une réservation non annulée existe, `participation` et
+        `associationId` sont figées (409) : le montant proposé à la file ne doit
+        pas changer en cours de route. Modifier le créneau reste possible — c'est
+        le report de rendez-vous — et poste un message système
+        `creneau_modifie` au détenteur. Si la file était bloquée faute de
+        créneau, la promotion reprend. L'adresse est figée tant qu'une
+        réservation est confirmée : le bénéficiaire l'a déjà reçue.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnnonceModification" }
+      responses:
+        "200":
+          description: "Annonce modifiée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnoncePublique" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409": { $ref: "#/components/responses/Conflit" }
+        "422": { $ref: "#/components/responses/Invalide" }
+    delete:
+      tags: ["Annonces"]
+      summary: "🚫 Retirer son annonce (donateur)"
+      description: >
+        Retrait logique : `statut` passe à `retiree`. Toutes les réservations
+        actives passent à `annulee` (`annonce_retiree`), avec un message
+        système. Impossible sur une annonce `remis`.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: "Annonce retirée" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409": { $ref: "#/components/responses/Conflit" }
+
+  /api/annonces/{id}/edition:
+    get:
+      tags: ["Annonces"]
+      summary: "📝 Fiche complète pour modifier son annonce (donateur)"
+      description: >
+        Réservée au donateur de l'annonce. Renvoie la fiche publique augmentée
+        des champs privés d'adresse, pour préremplir le formulaire de
+        modification. Les coordonnées exactes n'en font pas partie : elles sont
+        recalculées par le Worker à chaque changement d'adresse.
+
+
+        Indique aussi quels champs sont figés à l'instant de la lecture, pour
+        que l'interface les grise au lieu de laisser le donateur buter sur un
+        409 à l'enregistrement.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Fiche complète de l'annonce"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnonceDonateur" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  /api/annonces/{id}/contexte-local:
+    get:
+      tags: ["Données locales"]
+      summary: "🌦️ Quartier, météo du créneau et points d'intérêt proches"
+      description: >
+        Calculé à la demande, jamais stocké avec l'annonce. Météo : Open-Meteo,
+        pendant le créneau de retrait, `null` au-delà de l'horizon de prévision.
+        Quartiers et points d'intérêt : jeux de données de la Métropole de Lyon,
+        mesurés depuis la position approchée. Réponses mises en cache dans D1.
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Contexte local"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContexteLocal" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "502":
+          description: "Service tiers indisponible ; l'annonce reste consultable"
+
+  # --- Favoris ------------------------------------------------------------------
+
+  /api/annonces/{id}/favori:
+    put:
+      tags: ["Favoris"]
+      summary: "💜 Ajouter aux favoris"
+      description: "Idempotent : ajouter deux fois ne crée pas de doublon."
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: "En favori" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+    delete:
+      tags: ["Favoris"]
+      summary: "🤍 Retirer des favoris"
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: "Retiré des favoris" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+
+  /api/favoris:
+    get:
+      tags: ["Favoris"]
+      summary: "💜 Mes annonces favorites"
+      description: >
+        Toutes les annonces mises en favori, y compris celles remises ou
+        retirées depuis, pour que l'utilisateur comprenne pourquoi elles ne sont
+        plus disponibles.
+      security: [{ jetonFirebase: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/ParPage" }
+      responses:
+        "200":
+          description: "Page d'annonces favorites"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PageAnnonces" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+
+  # --- Recherches sauvegardées -------------------------------------------------
+
+  /api/recherches:
+    get:
+      tags: ["Recherches"]
+      summary: "🔖 Mes recherches sauvegardées"
+      security: [{ jetonFirebase: [] }]
+      responses:
+        "200":
+          description: "Recherches, de la plus récente à la plus ancienne"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recherches]
+                properties:
+                  recherches:
+                    type: array
+                    items: { $ref: "#/components/schemas/RechercheSauvegardee" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+    post:
+      tags: ["Recherches"]
+      summary: "🔖 Sauvegarder une recherche"
+      description: "10 recherches sauvegardées au plus par utilisateur (409 au-delà)."
+      security: [{ jetonFirebase: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RechercheSoumise" }
+      responses:
+        "201":
+          description: "Recherche sauvegardée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RechercheSauvegardee" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "409": { $ref: "#/components/responses/Conflit" }
+        "422": { $ref: "#/components/responses/Invalide" }
+
+  /api/recherches/{id}:
+    delete:
+      tags: ["Recherches"]
+      summary: "🗑️ Supprimer une recherche sauvegardée"
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: "Recherche supprimée" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  # --- Commentaires publics ----------------------------------------------------
+
+  /api/annonces/{id}/commentaires:
+    get:
+      tags: ["Commentaires"]
+      summary: "💬 Questions et réponses publiques d'une annonce"
+      description: >
+        Public. Les commentaires masqués sont exclus, sauf pour le donateur de
+        l'annonce, qui les voit avec leur statut pour pouvoir les rétablir.
+      security: [{}, { jetonFirebase: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/ParPage" }
+      responses:
+        "200":
+          description: "Commentaires, du plus ancien au plus récent"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [commentaires, total]
+                properties:
+                  commentaires:
+                    type: array
+                    items: { $ref: "#/components/schemas/Commentaire" }
+                  total: { type: integer }
+        "404": { $ref: "#/components/responses/Introuvable" }
+    post:
+      tags: ["Commentaires"]
+      summary: "❓ Poser une question sous une annonce (bénéficiaire)"
+      description: >
+        Réservé au rôle `beneficiaire`. Le donateur ne commente pas sa propre
+        annonce : il y répond (403). Plus de commentaire sur une annonce
+        `remis` ou `retiree` (409).
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TexteSoumis" }
+      responses:
+        "201":
+          description: "Commentaire publié"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Commentaire" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409": { $ref: "#/components/responses/Conflit" }
+        "422": { $ref: "#/components/responses/Invalide" }
+
+  /api/commentaires/{id}:
+    delete:
+      tags: ["Commentaires"]
+      summary: "🗑️ Supprimer son commentaire (auteur)"
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: "Commentaire supprimé" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  /api/commentaires/{id}/reponse:
+    put:
+      tags: ["Commentaires"]
+      summary: "↩️ Répondre à une question (donateur de l'annonce)"
+      description: >
+        Une seule réponse par commentaire, créée ou remplacée par cette route.
+        Pas de réponse à la réponse : un fil de discussion public serait un
+        forum, classé WON'T. L'interface avertit le donateur de ne pas y écrire
+        son adresse.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TexteSoumis" }
+      responses:
+        "200":
+          description: "Réponse enregistrée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Commentaire" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Seul le donateur de l'annonce peut répondre"
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "422": { $ref: "#/components/responses/Invalide" }
+
+  /api/commentaires/{id}/masquage:
+    post:
+      tags: ["Commentaires"]
+      summary: "🙈 Masquer ou rétablir un commentaire (donateur de l'annonce)"
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masque]
+              properties:
+                masque: { type: boolean }
+      responses:
+        "200":
+          description: "Statut mis à jour"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Commentaire" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  # --- Conversations ------------------------------------------------------------
+
+  /api/conversations:
+    get:
+      tags: ["Conversations"]
+      summary: "📨 Mes conversations"
+      description: "Triées par activité la plus récente."
+      security: [{ jetonFirebase: [] }]
+      responses:
+        "200":
+          description: "Conversations de l'utilisateur, avec leur dernier message"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conversations]
+                properties:
+                  conversations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Conversation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
 
   /api/annonces/{id}/conversation:
     post:
       tags: ["Conversations"]
-      summary: "Contacter le donateur"
+      summary: "✉️ Contacter le donateur"
       description: >
-        Cree ou retrouve la conversation entre le beneficiaire connecte et le
-        donateur de l'annonce. Le premier message est facultatif a la creation.
+        Crée ou retrouve la conversation entre le bénéficiaire connecté et le
+        donateur de l'annonce — elle est unique par couple (annonce,
+        bénéficiaire). Le premier message est facultatif à la création.
       security: [{ jetonFirebase: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+      parameters: [{ $ref: "#/components/parameters/Id" }]
       requestBody:
         required: false
         content:
           application/json:
             schema: { $ref: "#/components/schemas/MessageSoumis" }
       responses:
-        "201":
-          description: "Conversation creee"
+        "200":
+          description: "Conversation existante retrouvée"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Conversation" }
-        "401": { description: "Authentification requise" }
-        "404": { description: "Annonce introuvable" }
+        "201":
+          description: "Conversation créée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Conversation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Le donateur ne peut pas ouvrir une conversation avec lui-même"
+        "404": { $ref: "#/components/responses/Introuvable" }
 
   /api/conversations/{id}/messages:
     get:
       tags: ["Conversations"]
-      summary: "Lire les messages d'une conversation"
+      summary: "📖 Lire les messages d'une conversation"
+      description: >
+        Messages des participants et messages système. Un message système porte
+        un `evenement` et la `reservationId` concernée : le front en déduit les
+        boutons d'action à afficher (payer, refuser, se désister).
       security: [{ jetonFirebase: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+      parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
         "200":
           description: "Messages de la conversation"
@@ -231,18 +816,15 @@ paths:
                   messages:
                     type: array
                     items: { $ref: "#/components/schemas/Message" }
-        "401": { description: "Authentification requise" }
-        "403": { description: "Utilisateur absent de la conversation" }
-        "404": { description: "Conversation introuvable" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Utilisateur absent de la conversation"
+        "404": { $ref: "#/components/responses/Introuvable" }
     post:
       tags: ["Conversations"]
-      summary: "Envoyer un message"
+      summary: "💬 Envoyer un message, avec ou sans pièces jointes"
       security: [{ jetonFirebase: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+      parameters: [{ $ref: "#/components/parameters/Id" }]
       requestBody:
         required: true
         content:
@@ -250,61 +832,288 @@ paths:
             schema: { $ref: "#/components/schemas/MessageSoumis" }
       responses:
         "201":
-          description: "Message envoye"
+          description: "Message envoyé"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Message" }
-        "401": { description: "Authentification requise" }
-        "403": { description: "Utilisateur absent de la conversation" }
-        "404": { description: "Conversation introuvable" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Utilisateur absent de la conversation, ou média d'autrui cité"
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "422": { $ref: "#/components/responses/Invalide" }
 
-  /api/annonces/{id}/reservation:
+  # --- Réservations et liste d'attente ----------------------------------------
+
+  /api/annonces/{id}/reservations:
     post:
       tags: ["Réservations"]
-      summary: "🤝 Réserver un objet (participation en mode test → révèle l'adresse)"
+      summary: "🙋 Demander un objet — ou s'inscrire en liste d'attente"
       description: >
-        Le bénéficiaire verse la participation solidaire et met l'objet de côté.
-        Le paiement passe par un vrai prestataire, mais **en mode test** : il est
-        réellement validé et porte une référence de transaction, alors que le
-        montant débité est 0 et qu'aucun reversement réel n'a lieu. Le passage à
-        `paye` est ce qui débloque l'adresse exacte, renvoyée QUE par cette
-        réponse et jamais par une route de liste.
+        Réservé au rôle `beneficiaire`, et pas sur sa propre annonce.
+
+
+        - Annonce **disponible** : la réservation naît `proposee` et l'annonce
+        passe **aussitôt** à `reserve`. L'objet vous est mis de côté jusqu'à
+        `expireLe` pour payer. Une seconde demande arrivant pendant ce délai
+        s'inscrit donc en liste d'attente : deux personnes ne tiennent jamais le
+        même objet.
+
+        - Annonce **reserve** : la réservation naît `liste_attente`, avec sa
+        `position` dans la file.
+
+
+        Dans les deux cas, la conversation (annonce, bénéficiaire) est créée si
+        besoin et reçoit un message système. Aucun paiement à ce stade. La
+        vérification de l'état de l'annonce et l'écriture de la réservation se
+        font dans une même transaction.
       security: [{ jetonFirebase: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+      parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
         "201":
-          description: "Réservation confirmée ; adresse exacte débloquée"
+          description: "Réservation `proposee` ou `liste_attente`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403":
+          description: "Pas le rôle `beneficiaire`, ou demande sur sa propre annonce"
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409":
+          description: >
+            Réservation déjà en cours sur cette annonce ; annonce remise ou
+            retirée ; liste d'attente pleine (5) ; déjà 3 réservations en cours
+            pour ce bénéficiaire, file d'attente comprise ; ou, sur une annonce
+            disponible, créneau trop proche de sa fin pour laisser au moins
+            10 min pour payer — le donateur doit d'abord le modifier.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Erreur" }
+    get:
+      tags: ["Réservations"]
+      summary: "📋 File de réservations d'une annonce (donateur)"
+      description: >
+        Le détenteur actuel en tête, puis la liste d'attente dans l'ordre.
+        Réservé au donateur de l'annonce.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "File ordonnée"
           content:
             application/json:
               schema:
                 type: object
+                required: [reservations]
                 properties:
-                  statutPaiement: { type: string, enum: [paye] }
-                  participationDemandee:
-                    {
-                      type: number,
-                      description: "La participation réellement affichée au bénéficiaire",
-                    }
-                  montantDebite:
-                    {
-                      type: number,
-                      enum: [0],
-                      description: "Toujours 0 : mode test",
-                    }
-                  referencePaiement: { type: string }
-                  numeroRue:
-                    type: string
-                    description: "🔓 Révélé ici, et seulement ici"
-                  rue:
-                    type: string
-                    description: "🔓 Révélée ici, et seulement ici"
-                  complementAdresse: { type: string }
-        "401": { description: "Authentification requise" }
-        "409": { description: "Annonce déjà réservée ou déjà remise" }
+                  reservations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  /api/reservations:
+    get:
+      tags: ["Réservations"]
+      summary: "🧾 Mes réservations — demandées ou reçues"
+      security: [{ jetonFirebase: [] }]
+      parameters:
+        - name: role
+          in: query
+          required: true
+          description: >
+            `beneficiaire` : les objets que j'ai demandés. `donateur` : les
+            demandes reçues sur mes annonces.
+          schema: { type: string, enum: [beneficiaire, donateur] }
+        - name: statut
+          in: query
+          schema: { $ref: "#/components/schemas/StatutReservation" }
+      responses:
+        "200":
+          description: "Réservations"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reservations]
+                properties:
+                  reservations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+
+  /api/reservations/{id}:
+    get:
+      tags: ["Réservations"]
+      summary: "🔎 Consulter une réservation"
+      description: >
+        Réservé aux deux parties. `adresseRetrait` n'est renseignée que pour le
+        bénéficiaire, et seulement tant que la réservation est `confirmee`. Elle
+        se relit autant que nécessaire — l'ancien contrat ne la renvoyait qu'une
+        fois, et le bénéficiaire la perdait en rechargeant la page.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Réservation"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+
+  /api/reservations/{id}/paiement:
+    post:
+      tags: ["Réservations"]
+      summary: "💳 Accepter l'objet proposé en versant la participation (mode test)"
+      description: >
+        Uniquement sur une réservation `proposee`, par son bénéficiaire. Le
+        paiement passe par un vrai prestataire, mais en mode test : il est
+        réellement validé et porte une référence de transaction, alors que
+        `montantDebite` vaut 0. La réservation passe à `confirmee` — l'annonce
+        est déjà `reserve` depuis la proposition — et la réponse contient
+        l'adresse exacte.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Réservation confirmée ; `adresseRetrait` renseignée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "402": { description: "Paiement refusé par le prestataire (`echoue`)" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409":
+          description: "La réservation n'est pas `proposee`"
+        "410":
+          description: >
+            Délai dépassé : la proposition a expiré et l'objet est passé au
+            suivant de la file.
+
+  /api/reservations/{id}/refus:
+    post:
+      tags: ["Réservations"]
+      summary: "🙅 Décliner l'objet proposé"
+      description: >
+        Sur une réservation `proposee`, par son bénéficiaire. Elle passe à
+        `annulee` (`refus`) et l'objet est proposé au suivant de la file. Si la
+        file est vide, l'annonce redevient `disponible`.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Réservation annulée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "409":
+          description: "La réservation n'est pas `proposee`"
+
+  /api/reservations/{id}/desistement:
+    post:
+      tags: ["Réservations"]
+      summary: "↩️ Se désister"
+      description: >
+        Par le bénéficiaire, depuis `liste_attente`, `proposee` ou `confirmee`.
+        La réservation passe à `annulee` (`desistement`) ; si elle était payée,
+        `statutPaiement` passe à `rembourse` — fictivement, comme le paiement.
+
+
+        Si le bénéficiaire tenait l'objet, celui-ci est proposé au premier de la
+        file, qui reçoit un message système `objet_propose` et un délai de 12 h,
+        borné à 30 min avant la fin du créneau. Si ce délai laisse moins de
+        10 min, personne n'est promu : la file reste en attente, l'annonce
+        `reserve`, et le donateur est invité à modifier le créneau. Si la file
+        est vide, l'annonce redevient `disponible`.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Désistement enregistré"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "409":
+          description: "Réservation déjà remise ou annulée"
+
+  /api/reservations/{id}/remise:
+    post:
+      tags: ["Réservations"]
+      summary: "🤝 Confirmer la remise de l'objet (donateur)"
+      description: >
+        Sur une réservation `confirmee`, par le donateur. Elle passe à `remise`,
+        l'annonce à `remis`, et toute la file restante à `annulee`
+        (`attribuee_a_autrui`). Les avis s'ouvrent pour les deux parties.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Remise enregistrée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "409":
+          description: "La réservation n'est pas `confirmee`"
+
+  # --- Avis ---------------------------------------------------------------------
+
+  /api/reservations/{id}/avis:
+    post:
+      tags: ["Avis"]
+      summary: "⭐ Laisser un avis sur l'autre partie"
+      description: >
+        Uniquement sur une réservation `remise`. Le bénéficiaire note le
+        donateur, le donateur peut noter le bénéficiaire : un avis au plus par
+        partie et par réservation.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AvisSoumis" }
+      responses:
+        "201":
+          description: "Avis publié"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Avis" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "409":
+          description: "Réservation pas encore remise, ou avis déjà déposé"
+        "422": { $ref: "#/components/responses/Invalide" }
+
+  /api/avis/{id}:
+    put:
+      tags: ["Avis"]
+      summary: "✏️ Modifier son avis"
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AvisSoumis" }
+      responses:
+        "200":
+          description: "Avis modifié"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Avis" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "422": { $ref: "#/components/responses/Invalide" }
 
 components:
   securitySchemes:
@@ -317,31 +1126,237 @@ components:
         Le Worker vérifie signature, expiration, audience et émetteur, puis
         agit avec la clé de service. Le front n'écrit jamais dans Firestore.
 
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    ParPage:
+      name: parPage
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+
+  responses:
+    NonAuthentifie:
+      description: "Authentification requise"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+    Interdit:
+      description: "Action réservée à une autre personne ou à un autre rôle"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+    Introuvable:
+      description: "Ressource introuvable"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+    Conflit:
+      description: "L'état actuel de la ressource interdit l'opération"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+    Invalide:
+      description: "Champs invalides"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+    TropDeRequetes:
+      description: "Quota atteint"
+      headers:
+        Retry-After:
+          description: "Secondes avant de pouvoir réessayer"
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+
   schemas:
+    Erreur:
+      type: object
+      required: [erreur]
+      properties:
+        erreur:
+          type: string
+          description: "Message lisible, en français, affichable tel quel"
+        details:
+          type: array
+          items: { type: string }
+          description: "Détail champ par champ, pour les erreurs de validation"
+
+    # --- Valeurs réutilisées ----------------------------------------------------
+
+    Creneau:
+      type: object
+      required: [debut, fin]
+      description: >
+        Intervalle daté, et non plus chaîne libre : il permet de calculer les
+        délais de la liste d'attente, de trier par créneau et de recevoir le
+        créneau proposé par l'IA. `fin` après `debut`, `debut` dans le futur à la
+        publication.
+      properties:
+        debut: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+
+    EtatObjet:
+      type: string
+      enum: [neuf, tres_bon_etat, bon_etat, usage]
+      description: "État de l'objet ♻️"
+
+    StatutAnnonce:
+      type: string
+      enum: [disponible, reserve, remis, retiree]
+      description: >
+        « remis » et non « vendu » : rien n'est vendu ici. `reserve` dès qu'une
+        réservation est `proposee` ou `confirmee`, ou que la liste d'attente
+        n'est pas vide ; retour à `disponible` quand plus personne ne tient
+        l'objet ni n'attend. Une annonce `reserve` accepte encore des
+        inscriptions en liste d'attente.
+
+    StatutReservation:
+      type: string
+      enum: [liste_attente, proposee, confirmee, remise, annulee]
+
+    ProfilResume:
+      type: object
+      description: "Ce qu'on affiche d'un membre à côté d'un contenu qu'il a publié."
+      required: [id, prenom]
+      properties:
+        id: { type: string }
+        prenom: { type: string }
+        photoUrl: { type: string, nullable: true }
+        noteMoyenne:
+          type: number
+          nullable: true
+          description: "Moyenne des avis reçus, `null` sans avis"
+        nombreAvis: { type: integer }
+
+    # --- Référentiels -------------------------------------------------------------
+
+    Categorie:
+      type: object
+      required: [id, libelle]
+      properties:
+        id: { type: string }
+        libelle: { type: string, example: "Mobilier" }
+        parentId:
+          type: string
+          nullable: true
+          description: "`null` pour une catégorie principale"
+        illustrationUrl:
+          type: string
+          description: "Photo par défaut d'une annonce sans média 🖼️"
+        ordre: { type: integer }
+        sousCategories:
+          type: array
+          description: "Renseigné pour les catégories principales"
+          items: { $ref: "#/components/schemas/Categorie" }
+
     Association:
       type: object
       required: [id, nom]
       properties:
-        id:
+        id: { type: string, description: "Identifiant de l'association 🆔" }
+        nom: { type: string, description: "Nom de l'association ❤️" }
+        description: { type: string, description: "Présentation de la cause 📝" }
+        thematique: { type: string, example: "Précarité étudiante" }
+        numeroRna:
           type: string
-          description: "Identifiant de l'association 🆔"
-        nom:
+          pattern: "^W[0-9]{9}$"
+          description: "Numéro au Répertoire national des associations"
+        codePostal: { type: string }
+        ville: { type: string }
+        siteWeb: { type: string, format: uri }
+        logoUrl: { type: string, format: uri }
+
+    # --- Médias -------------------------------------------------------------------
+
+    Media:
+      type: object
+      required: [id, type, url]
+      properties:
+        id: { type: string, readOnly: true }
+        type: { type: string, enum: [photo, video, audio] }
+        typeMime: { type: string, example: "image/webp" }
+        tailleOctets: { type: integer }
+        dureeSecondes:
+          type: number
+          nullable: true
+          description: "Vidéo et audio seulement"
+        url: { type: string, format: uri }
+        miniatureUrl:
           type: string
-          description: "Nom de l'association ❤️"
-        description:
+          format: uri
+          nullable: true
+          description: "Vignette d'une vidéo"
+        creeLe: { type: string, format: date-time, readOnly: true }
+
+    # --- IA -------------------------------------------------------------------------
+
+    BrouillonDemande:
+      type: object
+      required: [texte]
+      properties:
+        texte:
           type: string
-          description: "Présentation de la cause 📝"
+          minLength: 3
+          maxLength: 1000
+          description: >
+            Saisie rapide, tapée ou dictée. Ex : « vélo de ville bleu, bon état,
+            à récupérer samedi entre 14 h et 16 h ».
+          example: "vélo de ville bleu, bon état, samedi 14h-16h"
+        mediaIds:
+          type: array
+          maxItems: 3
+          items: { type: string }
+          description: >
+            Photos déjà téléversées, pour la reconnaissance de l'objet. Elles
+            partent chez le service tiers : l'interface le dit avant l'envoi.
+
+    BrouillonAnnonce:
+      type: object
+      description: >
+        Tous les champs sont facultatifs : l'IA ne remplit que ce qu'elle a pu
+        déduire. L'adresse n'y figure jamais — elle vient du profil.
+      required: [champsIncertains]
+      properties:
+        titre: { type: string, maxLength: 80 }
+        description: { type: string, maxLength: 1000 }
+        categorieId: { type: string }
+        sousCategorieId: { type: string }
+        etat: { $ref: "#/components/schemas/EtatObjet" }
+        participationConseillee:
+          type: number
+          minimum: 0.01
+          description: "Une suggestion, présentée comme telle. Le donateur décide."
+        creneauRetrait: { $ref: "#/components/schemas/Creneau" }
+        champsIncertains:
+          type: array
+          items: { type: string }
+          description: >
+            Champs que l'IA n'a pas su déduire, ou dont la valeur proposée a été
+            écartée à la validation. L'interface les met en évidence.
+          example: ["etat", "creneauRetrait"]
+
+    # --- Annonces -------------------------------------------------------------------
 
     # Schema de SOUMISSION (corps du POST). Il porte l'adresse exacte, que le
     # donateur doit bien renseigner quelque part. Ne jamais le reutiliser comme
-    # schema de reponse sur une route de liste : voir AnnoncePublique.
+    # schema de reponse : voir AnnoncePublique.
     AnnonceSoumise:
       type: object
       required:
         [
           titre,
           description,
-          categorie,
+          categorieId,
+          sousCategorieId,
           etat,
           participation,
           associationId,
@@ -360,15 +1375,11 @@ components:
           type: string
           maxLength: 1000
           description: "Description de l'objet 📝"
-        categorie:
+        categorieId: { type: string }
+        sousCategorieId:
           type: string
-          enum:
-            [mobilier, electromenager, electronique, vetements, materiel, autre]
-          description: "Catégorie de l'objet 📦"
-        etat:
-          type: string
-          enum: [neuf, bon_etat, usage]
-          description: "État de l'objet ♻️"
+          description: "Doit appartenir à `categorieId` (422 sinon)"
+        etat: { $ref: "#/components/schemas/EtatObjet" }
         participation:
           type: number
           minimum: 0.01
@@ -380,9 +1391,7 @@ components:
         associationId:
           type: string
           description: "Association choisie par le donateur ❤️ — c'est elle qui touche l'argent"
-        creneauRetrait:
-          type: string
-          description: "Créneau ponctuel de disponibilité pour le retrait ⏰ (ex : « samedi 14h-16h »)"
+        creneauRetrait: { $ref: "#/components/schemas/Creneau" }
         numeroRue:
           type: string
           maxLength: 10
@@ -403,50 +1412,370 @@ components:
           type: string
           maxLength: 100
           description: "🌍 Publique — visible avant paiement."
-        photos:
+        mediaIds:
           type: array
-          items: { type: string, format: uri }
-          description: "URLs des photos (stockées sur R2) 📸"
+          maxItems: 8
+          items: { type: string }
+          description: >
+            Médias téléversés par le donateur lui-même 📸 — 8 au plus, dont une
+            seule vidéo. Sans média, l'illustration de la catégorie s'affiche.
+        assisteeParIA:
+          type: boolean
+          default: false
+          description: "Vrai si le formulaire a été prérempli par un brouillon IA"
 
-    # Schema de REPONSE des routes de liste. Liste blanche : numeroRue, rue et
-    # complementAdresse en sont absents PAR CONSTRUCTION, pas par filtrage.
-    # C'est la regle posee dans agents.md.
+    AnnonceModification:
+      type: object
+      minProperties: 1
+      description: >
+        Tous les champs de `AnnonceSoumise` sont modifiables, sous les réserves
+        décrites sur la route : `participation` et `associationId` figées dès
+        qu'une réservation non annulée existe, adresse figée tant qu'une
+        réservation est confirmée.
+      properties:
+        titre: { type: string, maxLength: 80 }
+        description: { type: string, maxLength: 1000 }
+        categorieId: { type: string }
+        sousCategorieId: { type: string }
+        etat: { $ref: "#/components/schemas/EtatObjet" }
+        participation: { type: number, minimum: 0.01 }
+        associationId: { type: string }
+        creneauRetrait: { $ref: "#/components/schemas/Creneau" }
+        numeroRue: { type: string, maxLength: 10 }
+        rue: { type: string, maxLength: 150 }
+        complementAdresse: { type: string, maxLength: 100 }
+        codePostal: { type: string, pattern: "^[0-9]{5}$" }
+        ville: { type: string, maxLength: 100 }
+        mediaIds:
+          type: array
+          maxItems: 8
+          items: { type: string }
+
+    # Schema de REPONSE. Liste blanche : numeroRue, rue, complementAdresse et
+    # les coordonnees exactes en sont absents PAR CONSTRUCTION, pas par
+    # filtrage. C'est la regle posee dans AGENTS.md.
     AnnoncePublique:
       type: object
+      required: [id, titre, participation, statut, codePostal, ville]
       properties:
         id: { type: string }
         titre: { type: string }
         description: { type: string }
         categorie:
-          { $ref: "#/components/schemas/AnnonceSoumise/properties/categorie" }
-        etat: { $ref: "#/components/schemas/AnnonceSoumise/properties/etat" }
+          type: object
+          properties:
+            id: { type: string }
+            libelle: { type: string }
+        sousCategorie:
+          type: object
+          properties:
+            id: { type: string }
+            libelle: { type: string }
+        etat: { $ref: "#/components/schemas/EtatObjet" }
         participation:
           type: number
           description: "Participation solidaire 💶 — versée à l'association"
-        associationId: { type: string }
-        donateurId: { type: string }
-        creneauRetrait:
-          type: string
-          description: "Créneau de retrait ⏰ — visible AVANT paiement"
+        association:
+          type: object
+          properties:
+            id: { type: string }
+            nom: { type: string }
+        donateur: { $ref: "#/components/schemas/ProfilResume" }
+        creneauRetrait: { $ref: "#/components/schemas/Creneau" }
         codePostal:
           type: string
           description: "📍 Visible AVANT paiement"
         ville:
           type: string
           description: "📍 Visible AVANT paiement"
-        photos:
-          type: array
-          items: { type: string, format: uri }
-        statut:
+        quartier:
           type: string
-          enum: [disponible, reserve, remis]
-          default: disponible
-          description: "Statut de l'annonce 🟢 — « remis » et non « vendu » : rien n'est vendu ici"
+          nullable: true
+          description: "📍 Libellé IRIS ; `null` hors Métropole de Lyon"
+        latitudeApprochee:
+          type: number
+          description: "📍 Centroïde du quartier IRIS, ou du code postal — jamais la position exacte"
+        longitudeApprochee: { type: number }
+        distanceKm:
+          type: number
+          nullable: true
+          description: >
+            Arrondie à 0,5 km et calculée sur la position approchée. Renseignée
+            seulement si la requête fournit une position ou un code postal.
+        medias:
+          type: array
+          items: { $ref: "#/components/schemas/Media" }
+        illustrationUrl:
+          type: string
+          description: "Illustration de la catégorie, à afficher sans média"
+        statut: { $ref: "#/components/schemas/StatutAnnonce" }
+        nombreEnAttente:
+          type: integer
+          description: "Personnes inscrites en liste d'attente"
+        nombreCommentaires: { type: integer }
+        estFavori:
+          type: boolean
+          nullable: true
+          description: "`null` quand la requête n'est pas authentifiée"
+        assisteeParIA: { type: boolean }
         creeLe: { type: string, format: date-time }
         misAJourLe: { type: string, format: date-time }
 
+    # Schema reserve au donateur de l'annonce (GET /api/annonces/{id}/edition).
+    # Jamais renvoye par une route de liste ni a un autre utilisateur.
+    AnnonceDonateur:
+      allOf:
+        - $ref: "#/components/schemas/AnnoncePublique"
+        - type: object
+          required: [numeroRue, rue, champsFiges]
+          properties:
+            numeroRue:
+              type: string
+              description: "🔒 Visible du seul donateur"
+            rue:
+              type: string
+              description: "🔒 Visible du seul donateur"
+            complementAdresse:
+              type: string
+              description: "🔒 Visible du seul donateur"
+            champsFiges:
+              type: array
+              items:
+                type: string
+                enum:
+                  [
+                    participation,
+                    associationId,
+                    numeroRue,
+                    rue,
+                    complementAdresse,
+                    codePostal,
+                    ville,
+                  ]
+              description: >
+                Champs non modifiables en l'état : `participation` et
+                `associationId` dès qu'une réservation non annulée existe,
+                l'adresse tant qu'une réservation est confirmée. Liste vide
+                sinon.
+
+    PageAnnonces:
+      type: object
+      required: [annonces, total, page, parPage]
+      properties:
+        annonces:
+          type: array
+          items: { $ref: "#/components/schemas/AnnoncePublique" }
+        total: { type: integer }
+        page: { type: integer }
+        parPage: { type: integer }
+
+    ContexteLocal:
+      type: object
+      properties:
+        quartier:
+          type: string
+          nullable: true
+          description: "Libellé IRIS — Métropole de Lyon"
+        meteoCreneau:
+          type: object
+          nullable: true
+          description: "`null` au-delà de l'horizon de prévision"
+          properties:
+            resume: { type: string, example: "Averses éparses" }
+            temperatureC: { type: number }
+            probabilitePluie:
+              type: integer
+              minimum: 0
+              maximum: 100
+            source: { type: string, example: "Open-Meteo" }
+        pointsInteret:
+          type: array
+          description: "Repères proches de la position approchée — 10 au plus"
+          items:
+            type: object
+            properties:
+              nom: { type: string, example: "Station Bellecour" }
+              type: { type: string, example: "transport" }
+              distanceM:
+                type: integer
+                description: "Arrondie à 100 m"
+        sources:
+          type: array
+          items: { type: string }
+          description: "Attribution des jeux de données utilisés"
+
+    # --- Recherches ---------------------------------------------------------------
+
+    CriteresRecherche:
+      type: object
+      description: "Les mêmes critères que `GET /api/annonces`, hors pagination."
+      properties:
+        q: { type: string }
+        categorieId: { type: string }
+        sousCategorieId: { type: string }
+        etat: { $ref: "#/components/schemas/EtatObjet" }
+        codePostal: { type: string, pattern: "^[0-9]{5}$" }
+        ville: { type: string }
+        rayonKm: { type: number, minimum: 0.5, maximum: 50 }
+        participationMax: { type: number, minimum: 0 }
+        disponiblesSeulement: { type: boolean }
+        tri: { type: string, enum: [recent, proximite, participation, creneau] }
+
+    RechercheSoumise:
+      type: object
+      required: [libelle, criteres]
+      properties:
+        libelle:
+          type: string
+          minLength: 1
+          maxLength: 60
+          example: "Bureaux près de la fac"
+        criteres: { $ref: "#/components/schemas/CriteresRecherche" }
+
+    RechercheSauvegardee:
+      allOf:
+        - $ref: "#/components/schemas/RechercheSoumise"
+        - type: object
+          required: [id, creeLe]
+          properties:
+            id: { type: string, readOnly: true }
+            creeLe: { type: string, format: date-time, readOnly: true }
+
+    # --- Commentaires -------------------------------------------------------------
+
+    TexteSoumis:
+      type: object
+      required: [contenu]
+      properties:
+        contenu:
+          type: string
+          minLength: 1
+          maxLength: 500
+
+    Commentaire:
+      type: object
+      required: [id, annonceId, auteur, contenu, statut, creeLe]
+      properties:
+        id: { type: string, readOnly: true }
+        annonceId: { type: string, readOnly: true }
+        auteur: { $ref: "#/components/schemas/ProfilResume" }
+        contenu: { type: string }
+        reponse:
+          type: object
+          nullable: true
+          description: "Réponse unique du donateur, `null` tant qu'il n'a pas répondu"
+          properties:
+            contenu: { type: string }
+            creeLe: { type: string, format: date-time }
+            misAJourLe: { type: string, format: date-time }
+        statut:
+          type: string
+          enum: [visible, masque]
+          description: "`masque` n'est visible que du donateur de l'annonce"
+        creeLe: { type: string, format: date-time, readOnly: true }
+        misAJourLe: { type: string, format: date-time, readOnly: true }
+
+    # --- Conversations ------------------------------------------------------------
+
+    Conversation:
+      type: object
+      required: [id, annonceId, donateurId, beneficiaireId, creeLe]
+      properties:
+        id: { type: string, readOnly: true }
+        annonceId: { type: string, readOnly: true }
+        annonceTitre: { type: string, readOnly: true }
+        donateurId: { type: string, readOnly: true }
+        beneficiaireId: { type: string, readOnly: true }
+        interlocuteur: { $ref: "#/components/schemas/ProfilResume" }
+        dernierMessage:
+          allOf:
+            - $ref: "#/components/schemas/Message"
+          description: >
+            **Absent**, et non `null`, quand la conversation n'a encore aucun
+            message : en OpenAPI 3.0, `nullable` à côté d'un `allOf` sans `type`
+            n'autorise pas `null`.
+        creeLe: { type: string, format: date-time, readOnly: true }
+        misAJourLe: { type: string, format: date-time, readOnly: true }
+
+    MessageSoumis:
+      type: object
+      description: "Il faut un texte, des pièces jointes, ou les deux."
+      properties:
+        contenu:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        mediaIds:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items: { type: string }
+          description: "Photos, vidéos ou messages vocaux téléversés par l'expéditeur"
+      anyOf:
+        - required: [contenu]
+        - required: [mediaIds]
+
+    Message:
+      type: object
+      required: [id, conversationId, type, creeLe]
+      properties:
+        id: { type: string, readOnly: true }
+        conversationId: { type: string, readOnly: true }
+        type:
+          type: string
+          enum: [utilisateur, systeme]
+        auteurId:
+          type: string
+          nullable: true
+          description: "`null` pour un message système"
+        reservationId:
+          type: string
+          nullable: true
+          description: >
+            Réservation concernée. Le front s'en sert pour afficher les boutons
+            d'action d'un message système.
+        evenement:
+          type: string
+          nullable: true
+          enum:
+            [
+              demande_en_file,
+              objet_propose,
+              paiement_valide,
+              refus,
+              desistement,
+              delai_depasse,
+              objet_remis,
+              attribuee_a_autrui,
+              creneau_modifie,
+              annonce_retiree,
+              null,
+            ]
+          description: >
+            Renseigné pour les messages système uniquement. `null` figure dans
+            l'énumération : en OpenAPI 3.0, `nullable` ne suffit pas à
+            l'autoriser quand une liste de valeurs est imposée.
+        contenu: { type: string, nullable: true }
+        medias:
+          type: array
+          items: { $ref: "#/components/schemas/Media" }
+        creeLe: { type: string, format: date-time, readOnly: true }
+
+    # --- Réservations ---------------------------------------------------------------
+
+    AdresseRetrait:
+      type: object
+      description: "🔓 L'adresse exacte, révélée au bénéficiaire d'une réservation confirmée."
+      properties:
+        numeroRue: { type: string }
+        rue: { type: string }
+        complementAdresse: { type: string }
+        codePostal: { type: string }
+        ville: { type: string }
+
     Reservation:
       type: object
+      required: [id, annonceId, beneficiaireId, donateurId, conversationId, statut, creeLe]
       properties:
         id: { type: string, readOnly: true }
         annonceId:
@@ -459,13 +1788,60 @@ components:
           description: >
             Identifiant du bénéficiaire 👤 — repris du jeton vérifié, jamais du
             corps de la requête : sinon on pourrait réserver au nom d'un autre.
-        participationDemandee:
-          type: number
+        donateurId:
+          type: string
+          readOnly: true
+          description: "Recopié depuis l'annonce, pour lister les demandes reçues."
+        conversationId:
+          type: string
+          readOnly: true
+          description: "Toujours renseigné : les messages système y sont postés."
+        statut: { $ref: "#/components/schemas/StatutReservation" }
+        motifAnnulation:
+          type: string
+          nullable: true
+          enum:
+            [
+              desistement,
+              refus,
+              delai_depasse,
+              attribuee_a_autrui,
+              annonce_retiree,
+              null,
+            ]
+          description: "Renseigné quand `statut` vaut `annulee`, `null` sinon"
+        position:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: "Rang dans la liste d'attente, calculé. `null` hors `liste_attente`."
+        proposeeLe:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        expireLe:
+          type: string
+          format: date-time
+          nullable: true
           readOnly: true
           description: >
-            La **vraie** participation, celle affichée au bénéficiaire. Recopiée
-            depuis `Annonce.participation` au moment de la réservation, pour
-            qu'une modification ultérieure ne réécrive pas l'historique.
+            Échéance pour payer ou refuser, quand `statut` vaut `proposee`.
+            Même règle dans les deux cas : `min(maintenant + délai, fin du
+            créneau − 30 min)`, avec un délai de 30 min après une demande
+            directe et de 12 h après une place libérée. Une proposition qui
+            laisserait moins de 10 min n'est pas émise : l'échéance n'est donc
+            jamais déjà passée à la création. À l'échéance, la tâche planifiée
+            annule la réservation et passe l'objet au suivant, ou remet
+            l'annonce à `disponible` si la file est vide.
+        participationDemandee:
+          type: number
+          nullable: true
+          readOnly: true
+          description: >
+            La **vraie** participation, celle affichée au bénéficiaire. Figée au
+            moment de la proposition, pour qu'une modification ultérieure ne
+            réécrive pas l'historique.
         montantDebite:
           type: number
           enum: [0]
@@ -473,11 +1849,14 @@ components:
           description: "💶 Ce qui est réellement prélevé : **0**, toujours."
         statutPaiement:
           type: string
-          enum: [en_attente, paye, echoue]
+          enum: [en_attente, paye, echoue, rembourse]
           default: en_attente
-          description: "🎭 `paye` débloque l'adresse exacte de l'annonce."
+          description: >
+            🎭 `paye` débloque l'adresse exacte. `rembourse` après un
+            désistement consécutif au paiement — fictif, comme le paiement.
         referencePaiement:
           type: string
+          nullable: true
           readOnly: true
           description: >
             Identifiant de transaction renvoyé par le prestataire. Preuve que le
@@ -489,41 +1868,44 @@ components:
           description: >
             Toujours `test`. Rend explicite en base qu'aucune transaction réelle
             n'a eu lieu — à ne jamais basculer sur `production` dans ce projet.
-        creeLe: { type: string, format: date-time, readOnly: true }
-
-    Conversation:
-      type: object
-      required: [id, annonceId, donateurId, beneficiaireId, creeLe]
-      properties:
-        id: { type: string, readOnly: true }
-        annonceId: { type: string, readOnly: true }
-        donateurId: { type: string, readOnly: true }
-        beneficiaireId: { type: string, readOnly: true }
+        adresseRetrait:
+          allOf:
+            - $ref: "#/components/schemas/AdresseRetrait"
+          readOnly: true
+          description: >
+            Présente pour le seul bénéficiaire, et seulement tant que la
+            réservation est `confirmee`. **Absente** dans tous les autres cas —
+            et jamais sur une route de liste. Absente plutôt que `null` : c'est
+            l'esprit de la liste blanche, un champ privé ne sort pas du tout.
         creeLe: { type: string, format: date-time, readOnly: true }
         misAJourLe: { type: string, format: date-time, readOnly: true }
 
-    MessageSoumis:
-      type: object
-      required: [contenu]
-      properties:
-        contenu:
-          type: string
-          minLength: 1
-          maxLength: 1000
-          description: "Message envoye au participant de la conversation"
+    # --- Avis -----------------------------------------------------------------------
 
-    Message:
+    AvisSoumis:
+      type: object
+      required: [note]
+      properties:
+        note: { type: integer, minimum: 1, maximum: 5 }
+        commentaire: { type: string, maxLength: 500 }
+
+    Avis:
       allOf:
-        - $ref: "#/components/schemas/MessageSoumis"
+        - $ref: "#/components/schemas/AvisSoumis"
         - type: object
-          required: [id, conversationId, auteurId, creeLe]
+          required: [id, reservationId, auteur, cibleId, creeLe]
           properties:
             id: { type: string, readOnly: true }
-            conversationId: { type: string, readOnly: true }
-            auteurId: { type: string, readOnly: true }
+            reservationId: { type: string, readOnly: true }
+            auteur: { $ref: "#/components/schemas/ProfilResume" }
+            cibleId:
+              type: string
+              readOnly: true
+              description: "L'autre partie de la réservation"
             creeLe: { type: string, format: date-time, readOnly: true }
+            misAJourLe: { type: string, format: date-time, readOnly: true }
 
-    # --- Profils ------------------------------------------------------------
+    # --- Profils --------------------------------------------------------------------
     # L'adresse est decomposee : cela permet de publier codePostal + ville sans
     # jamais laisser sortir le numero et la rue. Voir specs/data-model.md.
 
@@ -539,7 +1921,7 @@ components:
           minItems: 1
           uniqueItems: true
           items: { type: string, enum: [donateur, beneficiaire] }
-          description: "Rôles cumulables 🎁🙋 : un même compte peut donner et acquérir."
+          description: "Rôles cumulables 🎁🙋 : un même compte peut donner et réserver."
         numeroRue:
           type: string
           maxLength: 10
@@ -600,3 +1982,10 @@ components:
         ville:
           type: string
           description: "Chaîne vide pour les profils antérieurs au champ."
+        noteMoyenne:
+          type: number
+          nullable: true
+          description: "Moyenne des avis reçus, `null` sans avis. Absente de l'annuaire en ligne actuel."
+        nombreAvis:
+          type: integer
+          description: "Absent de l'annuaire en ligne actuel."
