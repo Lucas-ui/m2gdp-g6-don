@@ -164,13 +164,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [avis, total]
-                properties:
-                  avis:
-                    type: array
-                    items: { $ref: "#/components/schemas/Avis" }
-                  total: { type: integer }
+                allOf:
+                  - $ref: "#/components/schemas/Pagination"
+                  - type: object
+                    required: [avis]
+                    properties:
+                      avis:
+                        type: array
+                        items: { $ref: "#/components/schemas/Avis" }
         "404": { $ref: "#/components/responses/Introuvable" }
 
   # --- Référentiels -----------------------------------------------------------
@@ -445,8 +446,7 @@ paths:
         `associationId` sont figées (409) : le montant proposé à la file ne doit
         pas changer en cours de route. Modifier le créneau reste possible — c'est
         le report de rendez-vous — et poste un message système
-        `creneau_modifie` au détenteur. Si la file était bloquée faute de
-        créneau, la promotion reprend. L'adresse est figée tant qu'une
+        `creneau_modifie` au détenteur. L'adresse est figée tant qu'une
         réservation est confirmée : le bénéficiaire l'a déjà reçue.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -471,8 +471,11 @@ paths:
       summary: "🚫 Retirer son annonce (donateur)"
       description: >
         Retrait logique : `statut` passe à `retiree`. Toutes les réservations
-        actives passent à `annulee` (`annonce_retiree`), avec un message
-        système. Impossible sur une annonce `remis`.
+        en cours passent à `annulee` (`annonce_retiree`), avec un message
+        système. Une réservation déjà `confirmee` est payée : son
+        `statutPaiement` passe à `rembourse`, comme pour un désistement — le
+        bénéficiaire n'a pas à supporter le retrait du donateur. Impossible sur
+        une annonce `remis`.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
@@ -642,13 +645,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [commentaires, total]
-                properties:
-                  commentaires:
-                    type: array
-                    items: { $ref: "#/components/schemas/Commentaire" }
-                  total: { type: integer }
+                allOf:
+                  - $ref: "#/components/schemas/Pagination"
+                  - type: object
+                    required: [commentaires]
+                    properties:
+                      commentaires:
+                        type: array
+                        items: { $ref: "#/components/schemas/Commentaire" }
         "404": { $ref: "#/components/responses/Introuvable" }
     post:
       tags: ["Commentaires"]
@@ -853,8 +857,8 @@ paths:
 
 
         - Annonce **disponible** : la réservation naît `proposee` et l'annonce
-        passe **aussitôt** à `reserve`. L'objet vous est mis de côté jusqu'à
-        `expireLe` pour payer. Une seconde demande arrivant pendant ce délai
+        passe **aussitôt** à `reserve`. L'objet vous est mis de côté : payez
+        pour confirmer, ou refusez. Une seconde demande arrivant entre-temps
         s'inscrit donc en liste d'attente : deux personnes ne tiennent jamais le
         même objet.
 
@@ -882,9 +886,8 @@ paths:
           description: >
             Réservation déjà en cours sur cette annonce ; annonce remise ou
             retirée ; liste d'attente pleine (5) ; déjà 3 réservations en cours
-            pour ce bénéficiaire, file d'attente comprise ; ou, sur une annonce
-            disponible, créneau trop proche de sa fin pour laisser au moins
-            10 min pour payer — le donateur doit d'abord le modifier.
+            pour ce bénéficiaire, file d'attente comprise ; ou créneau de
+            retrait déjà terminé — le donateur doit d'abord le modifier.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Erreur" }
@@ -987,11 +990,9 @@ paths:
         "403": { $ref: "#/components/responses/Interdit" }
         "404": { $ref: "#/components/responses/Introuvable" }
         "409":
-          description: "La réservation n'est pas `proposee`"
-        "410":
           description: >
-            Délai dépassé : la proposition a expiré et l'objet est passé au
-            suivant de la file.
+            La réservation n'est pas `proposee` — par exemple parce que le
+            donateur est passé au suivant faute de réponse.
 
   /api/reservations/{id}/refus:
     post:
@@ -1025,11 +1026,9 @@ paths:
 
 
         Si le bénéficiaire tenait l'objet, celui-ci est proposé au premier de la
-        file, qui reçoit un message système `objet_propose` et un délai de 12 h,
-        borné à 30 min avant la fin du créneau. Si ce délai laisse moins de
-        10 min, personne n'est promu : la file reste en attente, l'annonce
-        `reserve`, et le donateur est invité à modifier le créneau. Si la file
-        est vide, l'annonce redevient `disponible`.
+        file, qui reçoit un message système `objet_propose` : il paie pour
+        accepter, ou refuse. Si la file est vide, l'annonce redevient
+        `disponible`.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
@@ -1042,6 +1041,31 @@ paths:
         "403": { $ref: "#/components/responses/Interdit" }
         "409":
           description: "Réservation déjà remise ou annulée"
+
+  /api/reservations/{id}/sans-reponse:
+    post:
+      tags: ["Réservations"]
+      summary: "⏭️ Passer au suivant faute de réponse (donateur)"
+      description: >
+        Il n'y a pas de délai automatique : si la personne à qui l'objet est
+        proposé ne répond pas, c'est le donateur qui décide de passer au
+        suivant. Sur une réservation `proposee`, par le donateur de l'annonce.
+        Elle passe à `annulee` (`sans_reponse`) et l'objet est proposé au
+        premier de la file ; si la file est vide, l'annonce redevient
+        `disponible`.
+      security: [{ jetonFirebase: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: "Réservation annulée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/NonAuthentifie" }
+        "403": { $ref: "#/components/responses/Interdit" }
+        "404": { $ref: "#/components/responses/Introuvable" }
+        "409":
+          description: "La réservation n'est pas `proposee`"
 
   /api/reservations/{id}/remise:
     post:
@@ -1166,7 +1190,7 @@ components:
       description: "Champs invalides"
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/Erreur" }
+          schema: { $ref: "#/components/schemas/ErreursValidation" }
     TropDeRequetes:
       description: "Quota atteint"
       headers:
@@ -1178,6 +1202,9 @@ components:
           schema: { $ref: "#/components/schemas/Erreur" }
 
   schemas:
+    # Deux formes d'erreur, calquees sur le Worker en ligne
+    # (workers/src/index.js) et deja lues par le front (public/src/lib/api.js) :
+    # une erreur unique, ou la liste des erreurs de validation en 422.
     Erreur:
       type: object
       required: [erreur]
@@ -1185,10 +1212,21 @@ components:
         erreur:
           type: string
           description: "Message lisible, en français, affichable tel quel"
-        details:
+
+    ErreursValidation:
+      type: object
+      required: [erreurs]
+      description: >
+        Réponse 422 : **toutes** les erreurs de la saisie d'un coup, pour que
+        l'utilisateur corrige son formulaire en une fois. Au pluriel, et non
+        `erreur` : c'est la forme que renvoie déjà `PUT /api/profil`, et que le
+        front assemble en un seul message.
+      properties:
+        erreurs:
           type: array
+          minItems: 1
           items: { type: string }
-          description: "Détail champ par champ, pour les erreurs de validation"
+          example: ["Le code postal doit comporter 5 chiffres.", "La rue est obligatoire."]
 
     # --- Valeurs réutilisées ----------------------------------------------------
 
@@ -1196,8 +1234,8 @@ components:
       type: object
       required: [debut, fin]
       description: >
-        Intervalle daté, et non plus chaîne libre : il permet de calculer les
-        délais de la liste d'attente, de trier par créneau et de recevoir le
+        Intervalle daté, et non plus chaîne libre : il permet de savoir si le
+        créneau est terminé, de trier par créneau et de recevoir le
         créneau proposé par l'IA. `fin` après `debut`, `debut` dans le futur à la
         publication.
       properties:
@@ -1238,6 +1276,14 @@ components:
         nombreAvis: { type: integer }
 
     # --- Référentiels -------------------------------------------------------------
+
+    CategorieResume:
+      type: object
+      description: Catégorie telle qu'embarquée dans une annonce
+      required: [id, libelle]
+      properties:
+        id: { type: string }
+        libelle: { type: string, example: "Mobilier" }
 
     Categorie:
       type: object
@@ -1346,26 +1392,13 @@ components:
 
     # --- Annonces -------------------------------------------------------------------
 
-    # Schema de SOUMISSION (corps du POST). Il porte l'adresse exacte, que le
-    # donateur doit bien renseigner quelque part. Ne jamais le reutiliser comme
-    # schema de reponse : voir AnnoncePublique.
-    AnnonceSoumise:
+    # Champs saisissables d'une annonce, definis UNE seule fois. La creation
+    # (AnnonceSoumise) et la modification (AnnonceModification) en derivent :
+    # un champ ajoute ici devient aussitot publiable et modifiable, sans copie
+    # a maintenir a la main. Ils portent l'adresse exacte : ne jamais les
+    # reutiliser comme schema de reponse publique, voir AnnoncePublique.
+    AnnonceChamps:
       type: object
-      required:
-        [
-          titre,
-          description,
-          categorieId,
-          sousCategorieId,
-          etat,
-          participation,
-          associationId,
-          creneauRetrait,
-          numeroRue,
-          rue,
-          codePostal,
-          ville,
-        ]
       properties:
         titre:
           type: string
@@ -1378,7 +1411,10 @@ components:
         categorieId: { type: string }
         sousCategorieId:
           type: string
-          description: "Doit appartenir à `categorieId` (422 sinon)"
+          description: >
+            Doit appartenir à `categorieId` (422 sinon). En modification, la
+            vérification porte sur la catégorie résultante : changer
+            `categorieId` seul, sans sous-catégorie compatible, est refusé.
         etat: { $ref: "#/components/schemas/EtatObjet" }
         participation:
           type: number
@@ -1419,37 +1455,47 @@ components:
           description: >
             Médias téléversés par le donateur lui-même 📸 — 8 au plus, dont une
             seule vidéo. Sans média, l'illustration de la catégorie s'affiche.
-        assisteeParIA:
-          type: boolean
-          default: false
-          description: "Vrai si le formulaire a été prérempli par un brouillon IA"
 
+    # Corps du POST : tous les champs obligatoires sauf le complement et les
+    # medias, plus la trace d'une assistance par l'IA, fixee a la creation.
+    AnnonceSoumise:
+      allOf:
+        - $ref: "#/components/schemas/AnnonceChamps"
+        - type: object
+          required:
+            [
+              titre,
+              description,
+              categorieId,
+              sousCategorieId,
+              etat,
+              participation,
+              associationId,
+              creneauRetrait,
+              numeroRue,
+              rue,
+              codePostal,
+              ville,
+            ]
+          properties:
+            assisteeParIA:
+              type: boolean
+              default: false
+              description: >
+                Vrai si le formulaire a été prérempli par un brouillon IA. Fixé
+                à la création : il ne se modifie pas ensuite.
+
+    # Corps du PATCH : les memes champs, tous facultatifs, au moins un.
     AnnonceModification:
-      type: object
-      minProperties: 1
+      allOf:
+        - $ref: "#/components/schemas/AnnonceChamps"
+        - type: object
+          minProperties: 1
       description: >
-        Tous les champs de `AnnonceSoumise` sont modifiables, sous les réserves
-        décrites sur la route : `participation` et `associationId` figées dès
-        qu'une réservation non annulée existe, adresse figée tant qu'une
-        réservation est confirmée.
-      properties:
-        titre: { type: string, maxLength: 80 }
-        description: { type: string, maxLength: 1000 }
-        categorieId: { type: string }
-        sousCategorieId: { type: string }
-        etat: { $ref: "#/components/schemas/EtatObjet" }
-        participation: { type: number, minimum: 0.01 }
-        associationId: { type: string }
-        creneauRetrait: { $ref: "#/components/schemas/Creneau" }
-        numeroRue: { type: string, maxLength: 10 }
-        rue: { type: string, maxLength: 150 }
-        complementAdresse: { type: string, maxLength: 100 }
-        codePostal: { type: string, pattern: "^[0-9]{5}$" }
-        ville: { type: string, maxLength: 100 }
-        mediaIds:
-          type: array
-          maxItems: 8
-          items: { type: string }
+        Les champs de création, tous facultatifs, sous les réserves décrites sur
+        la route : `participation` et `associationId` figées dès qu'une
+        réservation non annulée existe, adresse figée tant qu'une réservation
+        est confirmée.
 
     # Schema de REPONSE. Liste blanche : numeroRue, rue, complementAdresse et
     # les coordonnees exactes en sont absents PAR CONSTRUCTION, pas par
@@ -1461,16 +1507,8 @@ components:
         id: { type: string }
         titre: { type: string }
         description: { type: string }
-        categorie:
-          type: object
-          properties:
-            id: { type: string }
-            libelle: { type: string }
-        sousCategorie:
-          type: object
-          properties:
-            id: { type: string }
-            libelle: { type: string }
+        categorie: { $ref: "#/components/schemas/CategorieResume" }
+        sousCategorie: { $ref: "#/components/schemas/CategorieResume" }
         etat: { $ref: "#/components/schemas/EtatObjet" }
         participation:
           type: number
@@ -1558,16 +1596,29 @@ components:
                 l'adresse tant qu'une réservation est confirmée. Liste vide
                 sinon.
 
-    PageAnnonces:
+    # Convention des listes : une route qui accepte `page` et `parPage` compose
+    # Pagination avec sa liste ; une liste non paginee (categories,
+    # conversations, reservations...) renvoie la liste seule. OpenAPI 3.0 n'a
+    # pas de generiques : on factorise les metadonnees, pas l'enveloppe entiere.
+    Pagination:
       type: object
-      required: [annonces, total, page, parPage]
+      required: [total, page, parPage]
       properties:
-        annonces:
-          type: array
-          items: { $ref: "#/components/schemas/AnnoncePublique" }
-        total: { type: integer }
-        page: { type: integer }
-        parPage: { type: integer }
+        total:
+          type: integer
+          description: "Nombre total d'éléments, toutes pages confondues"
+        page: { type: integer, minimum: 1 }
+        parPage: { type: integer, minimum: 1, maximum: 50 }
+
+    PageAnnonces:
+      allOf:
+        - $ref: "#/components/schemas/Pagination"
+        - type: object
+          required: [annonces]
+          properties:
+            annonces:
+              type: array
+              items: { $ref: "#/components/schemas/AnnoncePublique" }
 
     ContexteLocal:
       type: object
@@ -1608,7 +1659,12 @@ components:
 
     CriteresRecherche:
       type: object
-      description: "Les mêmes critères que `GET /api/annonces`, hors pagination."
+      description: >
+        Les mêmes critères que `GET /api/annonces`, à deux exceptions près : la
+        pagination, et `latitude` / `longitude`, exclues **exprès** — la
+        position de celui qui cherche n'est jamais stockée. Une recherche
+        sauvegardée par proximité s'appuie donc sur `codePostal`, dont on prend
+        le centroïde.
       properties:
         q: { type: string }
         categorieId: { type: string }
@@ -1618,6 +1674,13 @@ components:
         ville: { type: string }
         rayonKm: { type: number, minimum: 0.5, maximum: 50 }
         participationMax: { type: number, minimum: 0 }
+        creneauApres:
+          type: string
+          format: date-time
+          description: >
+            Date absolue, rejouée telle quelle. Une fois passée, elle ne filtre
+            plus rien : la recherche renvoie simplement tous les créneaux à
+            venir.
         disponiblesSeulement: { type: boolean }
         tri: { type: string, enum: [recent, proximite, participation, creneau] }
 
@@ -1744,7 +1807,7 @@ components:
               paiement_valide,
               refus,
               desistement,
-              delai_depasse,
+              sans_reponse,
               objet_remis,
               attribuee_a_autrui,
               creneau_modifie,
@@ -1804,7 +1867,7 @@ components:
             [
               desistement,
               refus,
-              delai_depasse,
+              sans_reponse,
               attribuee_a_autrui,
               annonce_retiree,
               null,
@@ -1820,20 +1883,9 @@ components:
           format: date-time
           nullable: true
           readOnly: true
-        expireLe:
-          type: string
-          format: date-time
-          nullable: true
-          readOnly: true
           description: >
-            Échéance pour payer ou refuser, quand `statut` vaut `proposee`.
-            Même règle dans les deux cas : `min(maintenant + délai, fin du
-            créneau − 30 min)`, avec un délai de 30 min après une demande
-            directe et de 12 h après une place libérée. Une proposition qui
-            laisserait moins de 10 min n'est pas émise : l'échéance n'est donc
-            jamais déjà passée à la création. À l'échéance, la tâche planifiée
-            annule la réservation et passe l'objet au suivant, ou remet
-            l'annonce à `disponible` si la file est vide.
+            Date de la proposition. Le donateur s'en sert pour juger s'il est
+            temps de passer au suivant faute de réponse.
         participationDemandee:
           type: number
           nullable: true
@@ -1852,8 +1904,10 @@ components:
           enum: [en_attente, paye, echoue, rembourse]
           default: en_attente
           description: >
-            🎭 `paye` débloque l'adresse exacte. `rembourse` après un
-            désistement consécutif au paiement — fictif, comme le paiement.
+            🎭 `paye` débloque l'adresse exacte. Toute réservation payée qui
+            passe ensuite à `annulee` passe aussi à `rembourse`, quel que soit
+            le motif — désistement du bénéficiaire ou retrait de l'annonce par
+            le donateur. Fictif, comme le paiement.
         referencePaiement:
           type: string
           nullable: true

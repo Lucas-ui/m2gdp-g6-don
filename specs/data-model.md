@@ -36,7 +36,7 @@ deux règles métier ajoutées par l'équipe :
 | Géolocalisation, favoris, recherche avancée    | Priorisation   | Coordonnées, entité **`Favori`**, filtres et tris, recherches sauvegardées   |
 | Catégories à deux niveaux                      | Barème         | Entité **`Categorie`** hiérarchique, en remplacement de l'énumération figée  |
 | Commentaires publics sur les annonces          | Équipe         | Entité **`Commentaire`** : une question, une réponse du donateur             |
-| Liste d'attente en cas de désistement          | Équipe         | **`Reservation`** devient une machine à états, avec délais de réponse        |
+| Liste d'attente en cas de désistement          | Équipe         | **`Reservation`** devient une machine à états ; le suivant accepte ou refuse |
 
 Deux changements cassent le contrat précédent — sans conséquence, puisque
 aucune route d'annonce ni de réservation n'est encore codée :
@@ -45,8 +45,8 @@ aucune route d'annonce ni de réservation n'est encore codée :
   route unique `POST /api/annonces/{id}/reservation` se scinde en une demande,
   puis une confirmation par paiement.
 - **`creneauRetrait` devient un intervalle daté** (`debut`, `fin`) au lieu d'une
-  chaîne libre. Sans date exploitable, impossible de calculer un délai de
-  réponse, de trier par créneau, ou de recevoir le créneau généré par l'IA.
+  chaîne libre. Sans date exploitable, impossible de savoir si le créneau est
+  terminé, de trier par créneau, ou de recevoir le créneau généré par l'IA.
 
 ## Périmètre et priorités
 
@@ -170,7 +170,6 @@ classDiagram
         +string statut
         +string motifAnnulation
         +date proposeeLe
-        +date expireLe
         +number participationDemandee
         +number montantDebite
         +string statutPaiement
@@ -335,12 +334,13 @@ classDiagram
 
 Une annonce est « tenue » par au plus **une** réservation à la fois — proposée
 ou confirmée. Les demandes suivantes s'inscrivent en **liste d'attente**, dans
-l'ordre d'arrivée. Quand le détenteur se désiste, refuse ou laisse passer son
-délai, l'objet est **proposé au suivant**, qui doit à son tour accepter en
-payant, ou refuser. Et ainsi de suite.
+l'ordre d'arrivée. Quand le détenteur se désiste ou refuse, l'objet est
+**proposé au suivant**, qui doit à son tour accepter en payant, ou refuser. Et
+ainsi de suite. **Il n'y a pas de délai automatique** : si la personne ne
+répond pas, c'est le **donateur** qui passe au suivant, d'un bouton.
 
 **L'annonce passe à `reserve` dès la proposition**, et non au paiement : sinon,
-une seconde demande arrivant pendant le délai de paiement du premier obtiendrait
+une seconde demande arrivant avant le paiement du premier obtiendrait
 elle aussi `proposee`, et deux personnes tiendraient le même objet. Elle reste
 `reserve` tant que quelqu'un tient l'objet **ou attend** dans la file, et
 redevient `disponible` quand plus personne ne le tient ni ne l'attend.
@@ -354,10 +354,10 @@ stateDiagram-v2
     liste_attente --> annulee : désistement, objet remis à autrui, annonce retirée
 
     proposee --> confirmee : paiement validé (mode test)
-    proposee --> annulee : refus, délai dépassé, désistement
+    proposee --> annulee : refus, sans réponse, désistement, annonce retirée
 
     confirmee --> remise : remise confirmée par le donateur
-    confirmee --> annulee : désistement (remboursement fictif)
+    confirmee --> annulee : désistement, annonce retirée (remboursement fictif)
 
     remise --> [*]
     annulee --> [*]
@@ -366,12 +366,12 @@ stateDiagram-v2
 | `statut`        | Sens                                                               | Adresse exacte visible ? |
 | --------------- | ------------------------------------------------------------------ | ------------------------ |
 | `liste_attente` | Inscrit derrière le détenteur actuel ; `position` calculée          | Non                      |
-| `proposee`      | L'objet est mis de côté pour vous jusqu'à `expireLe`                | Non                      |
+| `proposee`      | L'objet vous est proposé : payer pour accepter, ou refuser          | Non                      |
 | `confirmee`     | Participation validée, retrait attendu                              | **Oui**, au bénéficiaire |
 | `remise`        | L'objet a changé de mains ; les avis s'ouvrent                     | Non                      |
 | `annulee`       | Fin sans remise ; la raison est dans `motifAnnulation`             | Non                      |
 
-`motifAnnulation` : `desistement`, `refus`, `delai_depasse`,
+`motifAnnulation` : `desistement`, `refus`, `sans_reponse`,
 `attribuee_a_autrui`, `annonce_retiree`. On garde **un seul** état terminal
 d'échec plutôt que trois : la raison change le message affiché, pas ce qu'on
 peut faire ensuite.
@@ -382,7 +382,6 @@ peut faire ensuite.
 sequenceDiagram
     participant B1 as Bénéficiaire 1 (détenteur)
     participant W as Worker
-    participant T as Tâche planifiée
     participant B2 as Bénéficiaire 2 (1er en file)
     participant B3 as Bénéficiaire 3 (2e en file)
     participant D as Donateur
@@ -390,7 +389,7 @@ sequenceDiagram
     B1->>W: POST /reservations/{id}/desistement
     W->>W: B1 passe à « annulee » (desistement)
     W->>D: message système « desistement »
-    W->>W: B2 passe à « proposee », expireLe calculé
+    W->>W: B2 passe à « proposee »
     W->>B2: message système « objet_propose » + e-mail
     alt B2 accepte
         B2->>W: POST /reservations/{id}/paiement
@@ -400,8 +399,8 @@ sequenceDiagram
         W->>W: B2 passe à « annulee » (refus)
         W->>B3: message système « objet_propose » + e-mail
     else B2 ne répond pas
-        T->>W: expiration (toutes les 10 min)
-        W->>W: B2 passe à « annulee » (delai_depasse)
+        D->>W: POST /reservations/{id}/sans-reponse
+        W->>W: B2 passe à « annulee » (sans_reponse)
         W->>B3: message système « objet_propose » + e-mail
     end
 ```
@@ -412,40 +411,29 @@ Les valeurs chiffrées sont des **propositions à valider** avec le PO.
 
 | Règle                                                        | Valeur proposée                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------- |
-| Délai pour payer quand on demande une annonce disponible     | **30 min** — la personne est dans l'application         |
-| Délai de réponse après une place libérée                     | **12 h**                                                |
-| Borne de tout délai                                          | **30 min avant la fin du créneau**                      |
-| Délai minimal pour émettre une proposition                   | **10 min**                                              |
 | Taille maximale de la liste d'attente                        | **5** personnes                                         |
 | Réservations en cours simultanées par bénéficiaire           | **3**, liste d'attente comprise — contre l'accaparement |
 | Réservation en cours par couple (annonce, bénéficiaire)      | **1** ; après un désistement, on repasse en fin de file |
 
-- **Une seule formule pour l'échéance**, qu'on demande une annonce disponible ou
-  qu'on soit promu depuis la file : `expireLe = min(maintenant + délai, fin du
-  créneau − 30 min)`. La borne porte sur la **fin** du créneau, pas sur son
-  début : quelqu'un peut encore réserver pendant un créneau de 14 h à 16 h et
-  passer à 15 h.
-- **Une proposition trop courte n'est pas émise.** Si l'échéance laisserait moins
-  de 10 minutes, personne ne reçoit l'objet — c'est ce qui garantit qu'une
-  réservation ne naît jamais déjà expirée. Sur une annonce disponible, la
-  demande est refusée (409). Pour une place libérée, la file reste en attente,
-  l'annonce `reserve`, et le donateur est invité à **modifier son créneau** ; la
-  promotion reprend dès qu'il l'enregistre.
+- **Pas de délai automatique, donc pas de tâche planifiée.** Un compte à rebours
+  demanderait une échéance calculée, une tâche qui tourne en fond et des règles
+  pour les créneaux trop courts. On laisse plutôt la main au donateur : il voit
+  depuis quand l'objet est proposé (`proposeeLe`) et passe au suivant s'il
+  n'a pas de nouvelles.
+- **On ne réserve pas une annonce dont le créneau est terminé** (409). Le
+  donateur le reporte en modifiant l'annonce, et le détenteur en est prévenu
+  par un message `creneau_modifie`.
 - **Le plafond de 3 compte aussi la liste d'attente.** Ne compter que les
   réservations proposées ou confirmées laisserait s'inscrire dans d'autres
   files, puis dépasser le plafond au moment des promotions, qui ne peuvent pas
   être refusées pour ce motif sans léser la file. Compter toutes les
   réservations en cours garantit que le plafond tient à tout instant.
-- **L'expiration demande une tâche planifiée.** Une vérification paresseuse, à
-  la lecture, ne suffit pas : si personne n'ouvre l'annonce, le suivant n'est
-  jamais prévenu. Un _Cron Trigger_ Cloudflare parcourt les réservations
-  `proposee` échues toutes les 10 minutes.
 - **La demande et la promotion sont transactionnelles.** Deux demandes
   simultanées sur une annonce disponible ne doivent pas produire deux
   réservations `proposee` : la lecture du statut de l'annonce, l'écriture de la
   réservation et le passage à `reserve` se font dans une même transaction
   Firestore.
-- **Quand une proposition prend fin sans remise** — refus, délai dépassé,
+- **Quand une proposition prend fin sans remise** — refus, sans réponse,
   désistement — l'objet passe au suivant ; si la file est vide, l'annonce
   redevient `disponible`.
 - **`participationDemandee` est figée au moment de la proposition**, et non à
@@ -461,19 +449,19 @@ Les valeurs chiffrées sont des **propositions à valider** avec le PO.
 ### Comment on prévient, sans notifications
 
 « Notifications non lues / alertes mobiles » est classé **WON'T**. On n'ajoute
-donc ni badge, ni push, ni champ `lu`. Mais une personne promue depuis la file a
-un **délai** pour répondre, et elle n'a aucune raison d'ouvrir l'application
-d'elle-même :
+donc ni badge, ni push, ni champ `lu`. Mais une personne promue depuis la file
+n'a aucune raison d'ouvrir l'application d'elle-même :
 
 1. **Toujours** : un message système `objet_propose` dans sa conversation. C'est
    la « messagerie actionnable » des maquettes clients : le message porte les
    boutons _Payer pour confirmer_ et _Refuser_.
 2. **Recommandé** : un **e-mail transactionnel** pour ce seul évènement, par le
-   SMTP Brevo déjà ouvert. Sans lui, la file devient injuste : le délai court
-   pour quelqu'un qui ne sait pas qu'il a été choisi. **À trancher avec le PO.**
+   SMTP Brevo déjà ouvert. Sans lui, la file devient injuste : le donateur
+   risque de passer au suivant avant que la personne sache qu'elle a été
+   choisie. **À trancher avec le PO.**
 
 `evenement` des messages système : `demande_en_file`, `objet_propose`,
-`paiement_valide`, `refus`, `desistement`, `delai_depasse`, `objet_remis`,
+`paiement_valide`, `refus`, `desistement`, `sans_reponse`, `objet_remis`,
 `attribuee_a_autrui`, `creneau_modifie`, `annonce_retiree`.
 
 ## Commentaires publics
@@ -658,7 +646,7 @@ la fait passer à `confirmee`.
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `participationDemandee` | La **vraie** participation, celle que voit le bénéficiaire. Figée au moment de la proposition, pour qu'une modification ultérieure ne réécrive pas l'historique |
 | `montantDebite`         | Ce qui est réellement prélevé : **0**                                                                                                               |
-| `statutPaiement`        | `en_attente` → `paye` (ou `echoue`), puis `rembourse` en cas de désistement après paiement. Le passage à `paye` est ce qui débloque l'adresse exacte |
+| `statutPaiement`        | `en_attente` → `paye` (ou `echoue`), puis `rembourse` si une réservation payée est annulée, quel que soit le motif (désistement, annonce retirée). Le passage à `paye` est ce qui débloque l'adresse exacte |
 | `referencePaiement`     | Identifiant renvoyé par le prestataire, preuve que le tunnel a bien été parcouru                                                                    |
 | `environnementPaiement` | `test`. Rend explicite en base qu'aucune transaction réelle n'a eu lieu                                                                             |
 
@@ -673,9 +661,10 @@ la fait passer à `confirmee`.
 ## Questions ouvertes pour le PO
 
 1. **E-mail de proposition** : faut-il l'envoyer quand une place se libère ?
-   Recommandé, sinon le délai de réponse court à l'insu de la personne.
-2. **Délais et plafonds** de la liste d'attente : 30 min, 12 h, 5 personnes,
-   3 réservations actives — à confirmer.
+   Recommandé, sinon la personne ne sait pas qu'on attend sa réponse.
+2. **Plafonds** de la liste d'attente : 5 personnes, 3 réservations en cours
+   par bénéficiaire — à confirmer. Un délai de réponse automatique a été écarté
+   pour garder le développement simple.
 3. **Accord du donateur** : les maquettes clients montrent un donateur qui
    _confirme_ une demande. Le modèle retient « premier arrivé, premier servi »,
    plus simple et plus équitable. Faut-il ajouter une validation par le
