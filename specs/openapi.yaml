@@ -4,8 +4,8 @@ info:
   version: "0.3.0"
   description: >
     API de la plateforme de don caritatif via la vente d'objets (groupe 6).
-    Le donateur cède un objet, fixe une participation solidaire — un montant
-    modeste — et choisit une association. Le bénéficiaire, étudiant ou personne
+    L'offrant cède un objet, fixe une participation solidaire — un montant
+    modeste — et choisit une association. Le demandeur, étudiant ou personne
     dans le besoin, verse cette participation et repart avec l'objet à petit
     prix, tandis que l'argent va intégralement à l'association.
 
@@ -201,7 +201,7 @@ paths:
   /api/associations:
     get:
       tags: ["Référentiels"]
-      summary: "❤️ Lister les associations bénéficiaires"
+      summary: "❤️ Lister les associations demandeurs"
       description: >
         Liste alimentée depuis le Répertoire national des associations, filtrée
         sur la Métropole de Lyon.
@@ -218,7 +218,7 @@ paths:
           schema: { type: string, pattern: "^[0-9]{5}$" }
       responses:
         "200":
-          description: "Associations sélectionnables par le donateur"
+          description: "Associations sélectionnables par l'offrant"
           content:
             application/json:
               schema:
@@ -287,7 +287,7 @@ paths:
       summary: "✨ Générer un brouillon d'annonce à partir d'une phrase ou d'une photo"
       description: >
         L'IA rédige un brouillon, elle ne publie jamais : la réponse préremplit
-        le formulaire, que le donateur corrige puis publie par
+        le formulaire, que l'offrant corrige puis publie par
         `POST /api/annonces`.
 
 
@@ -311,7 +311,7 @@ paths:
               schema: { $ref: "#/components/schemas/BrouillonAnnonce" }
         "401": { $ref: "#/components/responses/NonAuthentifie" }
         "403":
-          description: "Réservé aux comptes ayant le rôle `donateur`"
+          description: "Réservé aux comptes ayant le rôle `offrant`"
         "422": { $ref: "#/components/responses/Invalide" }
         "429": { $ref: "#/components/responses/TropDeRequetes" }
         "502":
@@ -397,9 +397,9 @@ paths:
         "422": { $ref: "#/components/responses/Invalide" }
     post:
       tags: ["Annonces"]
-      summary: "➕ Publier une annonce (donateur)"
+      summary: "➕ Publier une annonce (offrant)"
       description: >
-        Le donateur est repris du jeton vérifié, pas du corps : `donateurId` ne
+        L'offrant est repris du jeton vérifié, pas du corps : `offrantId` ne
         se déclare pas soi-même. À la publication, le Worker géocode l'adresse
         complète — coordonnées exactes, privées — et en déduit le quartier IRIS
         et la position approchée, publics.
@@ -417,7 +417,7 @@ paths:
               schema: { $ref: "#/components/schemas/AnnoncePublique" }
         "401": { $ref: "#/components/responses/NonAuthentifie" }
         "403":
-          description: "Réservé aux comptes ayant le rôle `donateur`, ou média d'autrui cité"
+          description: "Réservé aux comptes ayant le rôle `offrant`, ou média d'autrui cité"
         "422": { $ref: "#/components/responses/Invalide" }
 
   /api/annonces/{id}:
@@ -426,8 +426,8 @@ paths:
       summary: "📄 Consulter une annonce"
       description: >
         Fiche publique. L'adresse exacte n'y figure jamais, pour personne : le
-        bénéficiaire d'une réservation confirmée la lit sur la réservation, le
-        donateur sur `GET /api/annonces/{id}/edition`. Le schéma public reste
+        demandeur d'une réservation confirmée la lit sur la réservation, le
+        offrant sur `GET /api/annonces/{id}/edition`. Le schéma public reste
         ainsi une liste blanche, sans champ privé à masquer selon l'appelant.
       security: [{}, { jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -440,14 +440,14 @@ paths:
         "404": { $ref: "#/components/responses/Introuvable" }
     patch:
       tags: ["Annonces"]
-      summary: "✏️ Modifier son annonce (donateur)"
+      summary: "✏️ Modifier son annonce (offrant)"
       description: >
         Dès qu'une réservation non annulée existe, `participation` et
         `associationId` sont figées (409) : le montant proposé à la file ne doit
         pas changer en cours de route. Modifier le créneau reste possible — c'est
         le report de rendez-vous — et poste un message système
         `creneau_modifie` au détenteur. L'adresse est figée tant qu'une
-        réservation est confirmée : le bénéficiaire l'a déjà reçue.
+        réservation est confirmée : le demandeur l'a déjà reçue.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       requestBody:
@@ -468,13 +468,13 @@ paths:
         "422": { $ref: "#/components/responses/Invalide" }
     delete:
       tags: ["Annonces"]
-      summary: "🚫 Retirer son annonce (donateur)"
+      summary: "🚫 Retirer son annonce (offrant)"
       description: >
         Retrait logique : `statut` passe à `retiree`. Toutes les réservations
         en cours passent à `annulee` (`annonce_retiree`), avec un message
         système. Une réservation déjà `confirmee` est payée : son
         `statutPaiement` passe à `rembourse`, comme pour un désistement — le
-        bénéficiaire n'a pas à supporter le retrait du donateur. Impossible sur
+        demandeur n'a pas à supporter le retrait de l'offrant. Impossible sur
         une annonce `remis`.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -488,16 +488,16 @@ paths:
   /api/annonces/{id}/edition:
     get:
       tags: ["Annonces"]
-      summary: "📝 Fiche complète pour modifier son annonce (donateur)"
+      summary: "📝 Fiche complète pour modifier son annonce (offrant)"
       description: >
-        Réservée au donateur de l'annonce. Renvoie la fiche publique augmentée
+        Réservée à l'offrant de l'annonce. Renvoie la fiche publique augmentée
         des champs privés d'adresse, pour préremplir le formulaire de
         modification. Les coordonnées exactes n'en font pas partie : elles sont
         recalculées par le Worker à chaque changement d'adresse.
 
 
         Indique aussi quels champs sont figés à l'instant de la lecture, pour
-        que l'interface les grise au lieu de laisser le donateur buter sur un
+        que l'interface les grise au lieu de laisser l'offrant buter sur un
         409 à l'enregistrement.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -506,7 +506,7 @@ paths:
           description: "Fiche complète de l'annonce"
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/AnnonceDonateur" }
+              schema: { $ref: "#/components/schemas/AnnonceOffrant" }
         "401": { $ref: "#/components/responses/NonAuthentifie" }
         "403": { $ref: "#/components/responses/Interdit" }
         "404": { $ref: "#/components/responses/Introuvable" }
@@ -632,7 +632,7 @@ paths:
       tags: ["Commentaires"]
       summary: "💬 Questions et réponses publiques d'une annonce"
       description: >
-        Public. Les commentaires masqués sont exclus, sauf pour le donateur de
+        Public. Les commentaires masqués sont exclus, sauf pour l'offrant de
         l'annonce, qui les voit avec leur statut pour pouvoir les rétablir.
       security: [{}, { jetonFirebase: [] }]
       parameters:
@@ -656,9 +656,9 @@ paths:
         "404": { $ref: "#/components/responses/Introuvable" }
     post:
       tags: ["Commentaires"]
-      summary: "❓ Poser une question sous une annonce (bénéficiaire)"
+      summary: "❓ Poser une question sous une annonce (demandeur)"
       description: >
-        Réservé au rôle `beneficiaire`. Le donateur ne commente pas sa propre
+        Réservé au rôle `demandeur`. L'offrant ne commente pas sa propre
         annonce : il y répond (403). Plus de commentaire sur une annonce
         `remis` ou `retiree` (409).
       security: [{ jetonFirebase: [] }]
@@ -695,11 +695,11 @@ paths:
   /api/commentaires/{id}/reponse:
     put:
       tags: ["Commentaires"]
-      summary: "↩️ Répondre à une question (donateur de l'annonce)"
+      summary: "↩️ Répondre à une question (offrant de l'annonce)"
       description: >
         Une seule réponse par commentaire, créée ou remplacée par cette route.
         Pas de réponse à la réponse : un fil de discussion public serait un
-        forum, classé WON'T. L'interface avertit le donateur de ne pas y écrire
+        forum, classé WON'T. L'interface avertit l'offrant de ne pas y écrire
         son adresse.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -716,14 +716,14 @@ paths:
               schema: { $ref: "#/components/schemas/Commentaire" }
         "401": { $ref: "#/components/responses/NonAuthentifie" }
         "403":
-          description: "Seul le donateur de l'annonce peut répondre"
+          description: "Seul l'offrant de l'annonce peut répondre"
         "404": { $ref: "#/components/responses/Introuvable" }
         "422": { $ref: "#/components/responses/Invalide" }
 
   /api/commentaires/{id}/masquage:
     post:
       tags: ["Commentaires"]
-      summary: "🙈 Masquer ou rétablir un commentaire (donateur de l'annonce)"
+      summary: "🙈 Masquer ou rétablir un commentaire (offrant de l'annonce)"
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       requestBody:
@@ -770,11 +770,11 @@ paths:
   /api/annonces/{id}/conversation:
     post:
       tags: ["Conversations"]
-      summary: "✉️ Contacter le donateur"
+      summary: "✉️ Contacter l'offrant"
       description: >
-        Crée ou retrouve la conversation entre le bénéficiaire connecté et le
-        donateur de l'annonce — elle est unique par couple (annonce,
-        bénéficiaire). Le premier message est facultatif à la création.
+        Crée ou retrouve la conversation entre le demandeur connecté et le
+        offrant de l'annonce — elle est unique par couple (annonce,
+        demandeur). Le premier message est facultatif à la création.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       requestBody:
@@ -795,7 +795,7 @@ paths:
               schema: { $ref: "#/components/schemas/Conversation" }
         "401": { $ref: "#/components/responses/NonAuthentifie" }
         "403":
-          description: "Le donateur ne peut pas ouvrir une conversation avec lui-même"
+          description: "L'offrant ne peut pas ouvrir une conversation avec lui-même"
         "404": { $ref: "#/components/responses/Introuvable" }
 
   /api/conversations/{id}/messages:
@@ -853,7 +853,7 @@ paths:
       tags: ["Réservations"]
       summary: "🙋 Demander un objet — ou s'inscrire en liste d'attente"
       description: >
-        Réservé au rôle `beneficiaire`, et pas sur sa propre annonce.
+        Réservé au rôle `demandeur`, et pas sur sa propre annonce.
 
 
         - Annonce **disponible** : la réservation naît `proposee` et l'annonce
@@ -866,7 +866,7 @@ paths:
         `position` dans la file.
 
 
-        Dans les deux cas, la conversation (annonce, bénéficiaire) est créée si
+        Dans les deux cas, la conversation (annonce, demandeur) est créée si
         besoin et reçoit un message système. Aucun paiement à ce stade. La
         vérification de l'état de l'annonce et l'écriture de la réservation se
         font dans une même transaction.
@@ -880,23 +880,23 @@ paths:
               schema: { $ref: "#/components/schemas/Reservation" }
         "401": { $ref: "#/components/responses/NonAuthentifie" }
         "403":
-          description: "Pas le rôle `beneficiaire`, ou demande sur sa propre annonce"
+          description: "Pas le rôle `demandeur`, ou demande sur sa propre annonce"
         "404": { $ref: "#/components/responses/Introuvable" }
         "409":
           description: >
             Réservation déjà en cours sur cette annonce ; annonce remise ou
             retirée ; liste d'attente pleine (5) ; déjà 3 réservations en cours
-            pour ce bénéficiaire, file d'attente comprise ; ou créneau de
-            retrait déjà terminé — le donateur doit d'abord le modifier.
+            pour ce demandeur, file d'attente comprise ; ou créneau de
+            retrait déjà terminé — l'offrant doit d'abord le modifier.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Erreur" }
     get:
       tags: ["Réservations"]
-      summary: "📋 File de réservations d'une annonce (donateur)"
+      summary: "📋 File de réservations d'une annonce (offrant)"
       description: >
         Le détenteur actuel en tête, puis la liste d'attente dans l'ordre.
-        Réservé au donateur de l'annonce.
+        Réservé à l'offrant de l'annonce.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
@@ -925,9 +925,9 @@ paths:
           in: query
           required: true
           description: >
-            `beneficiaire` : les objets que j'ai demandés. `donateur` : les
+            `demandeur` : les objets que j'ai demandés. `offrant` : les
             demandes reçues sur mes annonces.
-          schema: { type: string, enum: [beneficiaire, donateur] }
+          schema: { type: string, enum: [demandeur, offrant] }
         - name: statut
           in: query
           schema: { $ref: "#/components/schemas/StatutReservation" }
@@ -951,9 +951,9 @@ paths:
       summary: "🔎 Consulter une réservation"
       description: >
         Réservé aux deux parties. `adresseRetrait` n'est renseignée que pour le
-        bénéficiaire, et seulement tant que la réservation est `confirmee`. Elle
+        demandeur, et seulement tant que la réservation est `confirmee`. Elle
         se relit autant que nécessaire — l'ancien contrat ne la renvoyait qu'une
-        fois, et le bénéficiaire la perdait en rechargeant la page.
+        fois, et le demandeur la perdait en rechargeant la page.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
@@ -971,7 +971,7 @@ paths:
       tags: ["Réservations"]
       summary: "💳 Accepter l'objet proposé en versant la participation (mode test)"
       description: >
-        Uniquement sur une réservation `proposee`, par son bénéficiaire. Le
+        Uniquement sur une réservation `proposee`, par son demandeur. Le
         paiement passe par un vrai prestataire, mais en mode test : il est
         réellement validé et porte une référence de transaction, alors que
         `montantDebite` vaut 0. La réservation passe à `confirmee` — l'annonce
@@ -992,14 +992,14 @@ paths:
         "409":
           description: >
             La réservation n'est pas `proposee` — par exemple parce que le
-            donateur est passé au suivant faute de réponse.
+            offrant est passé au suivant faute de réponse.
 
   /api/reservations/{id}/refus:
     post:
       tags: ["Réservations"]
       summary: "🙅 Décliner l'objet proposé"
       description: >
-        Sur une réservation `proposee`, par son bénéficiaire. Elle passe à
+        Sur une réservation `proposee`, par son demandeur. Elle passe à
         `annulee` (`refus`) et l'objet est proposé au suivant de la file. Si la
         file est vide, l'annonce redevient `disponible`.
       security: [{ jetonFirebase: [] }]
@@ -1020,12 +1020,12 @@ paths:
       tags: ["Réservations"]
       summary: "↩️ Se désister"
       description: >
-        Par le bénéficiaire, depuis `liste_attente`, `proposee` ou `confirmee`.
+        Par le demandeur, depuis `liste_attente`, `proposee` ou `confirmee`.
         La réservation passe à `annulee` (`desistement`) ; si elle était payée,
         `statutPaiement` passe à `rembourse` — fictivement, comme le paiement.
 
 
-        Si le bénéficiaire tenait l'objet, celui-ci est proposé au premier de la
+        Si le demandeur tenait l'objet, celui-ci est proposé au premier de la
         file, qui reçoit un message système `objet_propose` : il paie pour
         accepter, ou refuse. Si la file est vide, l'annonce redevient
         `disponible`.
@@ -1045,11 +1045,11 @@ paths:
   /api/reservations/{id}/sans-reponse:
     post:
       tags: ["Réservations"]
-      summary: "⏭️ Passer au suivant faute de réponse (donateur)"
+      summary: "⏭️ Passer au suivant faute de réponse (offrant)"
       description: >
         Il n'y a pas de délai automatique : si la personne à qui l'objet est
-        proposé ne répond pas, c'est le donateur qui décide de passer au
-        suivant. Sur une réservation `proposee`, par le donateur de l'annonce.
+        proposé ne répond pas, c'est l'offrant qui décide de passer au
+        suivant. Sur une réservation `proposee`, par l'offrant de l'annonce.
         Elle passe à `annulee` (`sans_reponse`) et l'objet est proposé au
         premier de la file ; si la file est vide, l'annonce redevient
         `disponible`.
@@ -1070,9 +1070,9 @@ paths:
   /api/reservations/{id}/remise:
     post:
       tags: ["Réservations"]
-      summary: "🤝 Confirmer la remise de l'objet (donateur)"
+      summary: "🤝 Confirmer la remise de l'objet (offrant)"
       description: >
-        Sur une réservation `confirmee`, par le donateur. Elle passe à `remise`,
+        Sur une réservation `confirmee`, par l'offrant. Elle passe à `remise`,
         l'annonce à `remis`, et toute la file restante à `annulee`
         (`attribuee_a_autrui`). Les avis s'ouvrent pour les deux parties.
       security: [{ jetonFirebase: [] }]
@@ -1095,8 +1095,8 @@ paths:
       tags: ["Avis"]
       summary: "⭐ Laisser un avis sur l'autre partie"
       description: >
-        Uniquement sur une réservation `remise`. Le bénéficiaire note le
-        donateur, le donateur peut noter le bénéficiaire : un avis au plus par
+        Uniquement sur une réservation `remise`. Le demandeur note le
+        offrant, l'offrant peut noter le demandeur : un avis au plus par
         partie et par réservation.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -1380,7 +1380,7 @@ components:
         participationConseillee:
           type: number
           minimum: 0.01
-          description: "Une suggestion, présentée comme telle. Le donateur décide."
+          description: "Une suggestion, présentée comme telle. L'offrant décide."
         creneauRetrait: { $ref: "#/components/schemas/Creneau" }
         champsIncertains:
           type: array
@@ -1420,13 +1420,13 @@ components:
           type: number
           minimum: 0.01
           description: >
-            Participation solidaire en euros 💶, fixée par le donateur.
+            Participation solidaire en euros 💶, fixée par l'offrant.
             Obligatoire et versée intégralement à l'association. Elle se veut
             **modeste** — c'est une contribution à une cause, pas le prix de
             l'objet — mais aucun plafond n'est imposé techniquement.
         associationId:
           type: string
-          description: "Association choisie par le donateur ❤️ — c'est elle qui touche l'argent"
+          description: "Association choisie par l'offrant ❤️ — c'est elle qui touche l'argent"
         creneauRetrait: { $ref: "#/components/schemas/Creneau" }
         numeroRue:
           type: string
@@ -1453,7 +1453,7 @@ components:
           maxItems: 8
           items: { type: string }
           description: >
-            Médias téléversés par le donateur lui-même 📸 — 8 au plus, dont une
+            Médias téléversés par l'offrant lui-même 📸 — 8 au plus, dont une
             seule vidéo. Sans média, l'illustration de la catégorie s'affiche.
 
     # Corps du POST : tous les champs obligatoires sauf le complement et les
@@ -1518,7 +1518,7 @@ components:
           properties:
             id: { type: string }
             nom: { type: string }
-        donateur: { $ref: "#/components/schemas/ProfilResume" }
+        offrant: { $ref: "#/components/schemas/ProfilResume" }
         creneauRetrait: { $ref: "#/components/schemas/Creneau" }
         codePostal:
           type: string
@@ -1559,9 +1559,9 @@ components:
         creeLe: { type: string, format: date-time }
         misAJourLe: { type: string, format: date-time }
 
-    # Schema reserve au donateur de l'annonce (GET /api/annonces/{id}/edition).
+    # Schema reserve à l'offrant de l'annonce (GET /api/annonces/{id}/edition).
     # Jamais renvoye par une route de liste ni a un autre utilisateur.
-    AnnonceDonateur:
+    AnnonceOffrant:
       allOf:
         - $ref: "#/components/schemas/AnnoncePublique"
         - type: object
@@ -1569,13 +1569,13 @@ components:
           properties:
             numeroRue:
               type: string
-              description: "🔒 Visible du seul donateur"
+              description: "🔒 Visible du seul offrant"
             rue:
               type: string
-              description: "🔒 Visible du seul donateur"
+              description: "🔒 Visible du seul offrant"
             complementAdresse:
               type: string
-              description: "🔒 Visible du seul donateur"
+              description: "🔒 Visible du seul offrant"
             champsFiges:
               type: array
               items:
@@ -1726,7 +1726,7 @@ components:
         reponse:
           type: object
           nullable: true
-          description: "Réponse unique du donateur, `null` tant qu'il n'a pas répondu"
+          description: "Réponse unique de l'offrant, `null` tant qu'il n'a pas répondu"
           properties:
             contenu: { type: string }
             creeLe: { type: string, format: date-time }
@@ -1734,7 +1734,7 @@ components:
         statut:
           type: string
           enum: [visible, masque]
-          description: "`masque` n'est visible que du donateur de l'annonce"
+          description: "`masque` n'est visible que de l'offrant de l'annonce"
         creeLe: { type: string, format: date-time, readOnly: true }
         misAJourLe: { type: string, format: date-time, readOnly: true }
 
@@ -1742,13 +1742,13 @@ components:
 
     Conversation:
       type: object
-      required: [id, annonceId, donateurId, beneficiaireId, creeLe]
+      required: [id, annonceId, offrantId, demandeurId, creeLe]
       properties:
         id: { type: string, readOnly: true }
         annonceId: { type: string, readOnly: true }
         annonceTitre: { type: string, readOnly: true }
-        donateurId: { type: string, readOnly: true }
-        beneficiaireId: { type: string, readOnly: true }
+        offrantId: { type: string, readOnly: true }
+        demandeurId: { type: string, readOnly: true }
         interlocuteur: { $ref: "#/components/schemas/ProfilResume" }
         dernierMessage:
           allOf:
@@ -1828,7 +1828,7 @@ components:
 
     AdresseRetrait:
       type: object
-      description: "🔓 L'adresse exacte, révélée au bénéficiaire d'une réservation confirmée."
+      description: "🔓 L'adresse exacte, révélée au demandeur d'une réservation confirmée."
       properties:
         numeroRue: { type: string }
         rue: { type: string }
@@ -1838,20 +1838,20 @@ components:
 
     Reservation:
       type: object
-      required: [id, annonceId, beneficiaireId, donateurId, conversationId, statut, creeLe]
+      required: [id, annonceId, demandeurId, offrantId, conversationId, statut, creeLe]
       properties:
         id: { type: string, readOnly: true }
         annonceId:
           type: string
           readOnly: true
           description: "Repris du chemin de la requête."
-        beneficiaireId:
+        demandeurId:
           type: string
           readOnly: true
           description: >
-            Identifiant du bénéficiaire 👤 — repris du jeton vérifié, jamais du
+            Identifiant du demandeur 👤 — repris du jeton vérifié, jamais du
             corps de la requête : sinon on pourrait réserver au nom d'un autre.
-        donateurId:
+        offrantId:
           type: string
           readOnly: true
           description: "Recopié depuis l'annonce, pour lister les demandes reçues."
@@ -1884,14 +1884,14 @@ components:
           nullable: true
           readOnly: true
           description: >
-            Date de la proposition. Le donateur s'en sert pour juger s'il est
+            Date de la proposition. L'offrant s'en sert pour juger s'il est
             temps de passer au suivant faute de réponse.
         participationDemandee:
           type: number
           nullable: true
           readOnly: true
           description: >
-            La **vraie** participation, celle affichée au bénéficiaire. Figée au
+            La **vraie** participation, celle affichée au demandeur. Figée au
             moment de la proposition, pour qu'une modification ultérieure ne
             réécrive pas l'historique.
         montantDebite:
@@ -1906,8 +1906,8 @@ components:
           description: >
             🎭 `paye` débloque l'adresse exacte. Toute réservation payée qui
             passe ensuite à `annulee` passe aussi à `rembourse`, quel que soit
-            le motif — désistement du bénéficiaire ou retrait de l'annonce par
-            le donateur. Fictif, comme le paiement.
+            le motif — désistement du demandeur ou retrait de l'annonce par
+            l'offrant. Fictif, comme le paiement.
         referencePaiement:
           type: string
           nullable: true
@@ -1927,7 +1927,7 @@ components:
             - $ref: "#/components/schemas/AdresseRetrait"
           readOnly: true
           description: >
-            Présente pour le seul bénéficiaire, et seulement tant que la
+            Présente pour le seul demandeur, et seulement tant que la
             réservation est `confirmee`. **Absente** dans tous les autres cas —
             et jamais sur une route de liste. Absente plutôt que `null` : c'est
             l'esprit de la liste blanche, un champ privé ne sort pas du tout.
@@ -1974,7 +1974,7 @@ components:
           type: array
           minItems: 1
           uniqueItems: true
-          items: { type: string, enum: [donateur, beneficiaire] }
+          items: { type: string, enum: [offrant, demandeur] }
           description: "Rôles cumulables 🎁🙋 : un même compte peut donner et réserver."
         numeroRue:
           type: string

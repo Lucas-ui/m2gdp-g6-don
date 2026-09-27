@@ -9,14 +9,14 @@ const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
 const ROLES = [
   {
-    valeur: "donateur",
-    titre: "Donateur",
+    valeur: "offrant",
+    titre: "Offrant",
     detail: "Je donne ce dont je n’ai plus l’usage",
     illustration: "/illustrations/objet-cadeau.svg",
   },
   {
-    valeur: "beneficiaire",
-    titre: "Bénéficiaire",
+    valeur: "demandeur",
+    titre: "Demandeur",
     detail: "Je cherche des objets dont j’ai besoin",
     illustration: "/illustrations/expression-heureux.svg",
   },

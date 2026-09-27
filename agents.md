@@ -7,25 +7,25 @@ Ce fichier guide les agents IA (IDE, Copilot, etc.) qui travaillent sur ce dép�
 **Donéo** — plateforme de **don caritatif via la vente d'objets**. Trois
 acteurs :
 
-- **Donateur** : cède un objet, **fixe une participation solidaire** — un montant
+- **Offrant** : cède un objet, **fixe une participation solidaire** — un montant
   modeste — et **choisit une association** dans une liste. Définit un créneau de
   retrait. Il ne touche pas l'argent — c'est ce qui fait de la vente un don.
-- **Bénéficiaire** : un **étudiant ou une personne dans le besoin**. Il verse la
+- **Demandeur** : un **étudiant ou une personne dans le besoin**. Il verse la
   participation et repart avec **l'objet à petit prix** ; il vient le récupérer
   sur place.
-- **Association** : reçoit **l'argent** versé par le bénéficiaire.
+- **Association** : reçoit **l'argent** versé par le demandeur.
 
-Les rôles `donateur` et `beneficiaire` sont **cumulables** sur un même compte.
+Les rôles `offrant` et `demandeur` sont **cumulables** sur un même compte.
 
 Spécificités métier :
 
-- La **participation est fixée par le donateur** (obligatoire) et **versée
+- La **participation est fixée par l'offrant** (obligatoire) et **versée
   intégralement à l'association** choisie. Pas d'enchère, pas d'offre montante :
   un montant fixe, et modeste — ce n'est pas le prix de l'objet mais une
   contribution à une cause. Aucun plafond n'est imposé techniquement.
-- Le donateur définit un **créneau ponctuel** (tranche horaire de disponibilité
+- L'offrant définit un **créneau ponctuel** (tranche horaire de disponibilité
   pour le retrait).
-- **Adresse à deux niveaux** : le bénéficiaire voit un **lieu approximatif**
+- **Adresse à deux niveaux** : le demandeur voit un **lieu approximatif**
   (code postal, ville) et le créneau **avant** de verser la participation ;
   l'**adresse exacte n'est révélée qu'après validation de la participation**.
 - Le **paiement passe par un vrai prestataire, en mode test uniquement**. Il est
@@ -66,6 +66,6 @@ Spécificités métier :
   blanche (ne laisser sortir que les champs explicitement publics), jamais par
   liste noire.
 - **Nommer tous les champs en français**, y compris les clés étrangères
-  (`donateurId`, `associationId`, `beneficiaireId`) et les valeurs
+  (`offrantId`, `associationId`, `demandeurId`) et les valeurs
   d'énumération. Pas de `title`, `price` ni `createdAt` — et le montant s'appelle
   `participation`, jamais `prix`.

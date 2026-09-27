@@ -15,7 +15,7 @@ Ils reprennent le wireframe de la J2.
 |---|-------|---------|
 | 1 | **Se connecter avec votre e-mail** | Une saisie, un bouton « Envoyer le lien magique », et la mention « Pas encore inscrit(e) ? Nous créerons un compte pour vous. » |
 | 2 | **E-mail reçu** | Envoyé par Firebase. Le lien ramène sur l'application. |
-| 3 | **Formulaire d'inscription** | Photo, Nom, Prénom, rôles (**donateur** et/ou **bénéficiaire**, cumulables), Adresse postale. Affiché **uniquement** si l'utilisateur n'a pas encore de profil. |
+| 3 | **Formulaire d'inscription** | Photo, Nom, Prénom, rôles (**offrant** et/ou **demandeur**, cumulables), Adresse postale. Affiché **uniquement** si l'utilisateur n'a pas encore de profil. |
 
 Le wireframe montrait un menu déroulant pour le type d'utilisateur. Il a été
 remplacé par des **cases à cocher** : les deux rôles se cumulent, et un même

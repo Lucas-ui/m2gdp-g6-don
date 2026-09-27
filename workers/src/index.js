@@ -24,7 +24,7 @@ const SCOPES = [
 // Valeurs stockees en base : sans accent ni espace, pour rester stables.
 // Un utilisateur peut cumuler les deux : on donne ce dont on n'a plus besoin
 // tout en cherchant autre chose. Le champ est donc une liste, pas une valeur.
-const ROLES = ['donateur', 'beneficiaire'];
+const ROLES = ['offrant', 'demandeur'];
 
 /**
  * Origines autorisees. En plus du front en production, on laisse passer le

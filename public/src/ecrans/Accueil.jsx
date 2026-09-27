@@ -6,8 +6,8 @@ import { listerUtilisateurs } from "@/lib/api.js";
 import { seDeconnecter } from "@/lib/auth.js";
 
 const LIBELLE_ROLE = {
-  donateur: "Donateur",
-  beneficiaire: "Bénéficiaire",
+  offrant: "Offrant",
+  demandeur: "Demandeur",
 };
 
 /** Teinte d'accompagnement de la pastille, choisie d'apres le prenom pour que
@@ -16,7 +16,7 @@ const TONS = ["bg-lavande", "bg-menthe", "bg-pervenche", "bg-citron"];
 const ton = (graine = "") =>
   TONS[[...graine].reduce((n, c) => n + c.charCodeAt(0), 0) % TONS.length];
 
-/** « Donateur », « Bénéficiaire », ou « Donateur et bénéficiaire ». */
+/** « Offrant », « Demandeur », ou « Offrant et demandeur ». */
 function libelleRoles(roles = []) {
   const noms = roles.map((r) => LIBELLE_ROLE[r] || r);
   if (noms.length === 0) return "Rôle non précisé";

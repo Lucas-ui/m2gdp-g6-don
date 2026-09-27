@@ -13,18 +13,18 @@ Le Pré-J3 DEV demande deux artefacts pour le scénario minimal :
 
 | Étape                  | Acteur                      | Résultat attendu                                                  |
 | ---------------------- | --------------------------- | ----------------------------------------------------------------- |
-| 1. Créer son profil    | Donateur et/ou bénéficiaire | Compte identifié, rôles cumulables                                |
-| 2. Publier une annonce | Donateur                    | Objet, participation, association, créneau et adresse enregistrés |
-| 3. Rechercher          | Bénéficiaire                | Annonces filtrables par texte, ville ou code postal               |
-| 4. Consulter           | Bénéficiaire                | Participation, créneau et lieu approximatif visibles              |
-| 5. Contacter           | Bénéficiaire                | Conversation liée à l'annonce                                     |
-| 6. Réserver            | Bénéficiaire                | Paiement validé en mode test et réservation confirmée             |
-| 7. Retirer             | Donateur et bénéficiaire    | Adresse exacte révélée uniquement après validation                |
+| 1. Créer son profil    | Offrant et/ou demandeur | Compte identifié, rôles cumulables                                |
+| 2. Publier une annonce | Offrant                    | Objet, participation, association, créneau et adresse enregistrés |
+| 3. Rechercher          | Demandeur                | Annonces filtrables par texte, ville ou code postal               |
+| 4. Consulter           | Demandeur                | Participation, créneau et lieu approximatif visibles              |
+| 5. Contacter           | Demandeur                | Conversation liée à l'annonce                                     |
+| 6. Réserver            | Demandeur                | Paiement validé en mode test et réservation confirmée             |
+| 7. Retirer             | Offrant et demandeur    | Adresse exacte révélée uniquement après validation                |
 
 ## Règles structurantes
 
-- La participation est fixée par le donateur et revient à l'association choisie.
-- Le donateur ne reçoit pas l'argent ; il remet l'objet au bénéficiaire.
+- La participation est fixée par l'offrant et revient à l'association choisie.
+- L'offrant ne reçoit pas l'argent ; il remet l'objet au demandeur.
 - `codePostal` et `ville` sont publics avant paiement.
 - `numeroRue`, `rue` et `complementAdresse` sont privés et ne sortent qu'après
   une réservation payée.

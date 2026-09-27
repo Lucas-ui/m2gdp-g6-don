@@ -18,7 +18,7 @@
 
 ## Arbitrages actés
 
-1. **Les rôles sont cumulables** — donateur *et/ou* bénéficiaire. Un même compte
+1. **Les rôles sont cumulables** — offrant *et/ou* demandeur. Un même compte
    peut donner ce dont il n'a plus l'usage tout en cherchant autre chose : c'est
    le cas courant entre étudiants, pas l'exception. Le champ devient une liste
    `roles[]`.
@@ -91,7 +91,7 @@ Gérer l'identité et l'accès des utilisateurs à la plateforme de dons de mani
 ### Périmètre fonctionnel
 - Inscription et connexion via e-mail avec un "Lien magique".
 - Création du profil obligatoire pour les nouveaux utilisateurs après le clic sur le lien.
-- Champs du profil : nom, prénom, date de naissance, **rôles (donateur et/ou bénéficiaire, cumulables)**, numéro de rue, rue, complément (facultatif), code postal, ville.
+- Champs du profil : nom, prénom, date de naissance, **rôles (offrant et/ou demandeur, cumulables)**, numéro de rue, rue, complément (facultatif), code postal, ville.
 - Déconnexion.
 - Consultation des membres inscrits.
 - **Passerelle backend** : le front n'accède jamais à Firestore directement. Il présente son jeton d'identité, le Worker Cloudflare le vérifie, puis agit avec la clé de service.
@@ -118,7 +118,7 @@ En tant que nouveau visiteur, je veux m'inscrire via un lien magique envoyé par
 - L'utilisateur saisit son e-mail sur la page d'inscription.
 - Le système indique si l'adresse a déjà un compte, puis envoie le lien magique. **Le lien est le même dans les deux cas ; seul le message affiché diffère.**
 - L'utilisateur clique sur le lien dans sa boîte mail. Firebase crée le compte à la consommation du lien.
-- Il est redirigé vers un formulaire pour compléter son profil : nom, prénom, rôles (donateur et/ou bénéficiaire), numéro de rue, rue, complément (facultatif), code postal, ville, date de naissance.
+- Il est redirigé vers un formulaire pour compléter son profil : nom, prénom, rôles (offrant et/ou demandeur), numéro de rue, rue, complément (facultatif), code postal, ville, date de naissance.
 - Validation et redirection vers la page d'accueil en mode connecté.
 
 ### Critères d'acceptation
@@ -150,7 +150,7 @@ En tant que nouveau visiteur, je veux m'inscrire via un lien magique envoyé par
 ***
 
 ### Titre
-En tant qu'utilisateur déjà inscrit (donateur, bénéficiaire, ou les deux), je veux me connecter via un lien magique envoyé sur mon e-mail, afin de retrouver mon profil, mes dons et mes demandes.
+En tant qu'utilisateur déjà inscrit (offrant, demandeur, ou les deux), je veux me connecter via un lien magique envoyé sur mon e-mail, afin de retrouver mon profil, mes dons et mes demandes.
 
 ### Spécifications fonctionnelles
 **Contexte :** Fluidifier le retour de l'utilisateur sur l'application.

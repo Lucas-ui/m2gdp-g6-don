@@ -2,25 +2,25 @@
 
 Projet Gestion de Projet M2CIM 2026/2027 — Groupe 6.
 
-Plateforme de **don caritatif par la vente d'objets**. Un **donateur** cède ce
+Plateforme de **don caritatif par la vente d'objets**. Un **offrant** cède ce
 dont il n'a plus l'usage — mobilier, électroménager, matériel scolaire,
 vêtements — fixe une **participation solidaire** et choisit une **association**.
-Un **bénéficiaire** — étudiant, ou personne dans le besoin — verse cette
+Un **demandeur** — étudiant, ou personne dans le besoin — verse cette
 participation et vient récupérer l'objet en main propre.
 
-**Le donateur ne touche pas l'argent** : la totalité va à l'association qu'il a
-choisie. C'est ce qui fait de la vente un don. Le bénéficiaire, lui, repart avec
+**L'offrant ne touche pas l'argent** : la totalité va à l'association qu'il a
+choisie. C'est ce qui fait de la vente un don. Le demandeur, lui, repart avec
 l'objet **à petit prix**.
 
 La participation n'est pas un prix de marché. Elle reste **modeste** : ce qu'elle
 achète, ce n'est pas la valeur de l'objet, c'est le geste de soutenir une
 association. Pas d'enchère non plus — le montant est fixé une fois pour toutes
-par le donateur.
+par l'offrant.
 
-Le donateur définit aussi un **créneau de retrait**, et l'**adresse exacte n'est
-révélée qu'une fois la participation validée** — avant, le bénéficiaire ne voit
-qu'un lieu approximatif (code postal et ville). Les rôles `donateur` et
-`beneficiaire` sont **cumulables** sur un même compte.
+L'offrant définit aussi un **créneau de retrait**, et l'**adresse exacte n'est
+révélée qu'une fois la participation validée** — avant, le demandeur ne voit
+qu'un lieu approximatif (code postal et ville). Les rôles `offrant` et
+`demandeur` sont **cumulables** sur un même compte.
 
 > ⚠️ Le **paiement est simulé** : interface front uniquement, aucune transaction
 > ni aucun reversement réels.

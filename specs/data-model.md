@@ -1,23 +1,23 @@
 # Modèle de données — Donéo (vente caritative d'objets)
 
-Don caritatif via la vente d'objets : le **donateur** cède un objet et fixe une
+Don caritatif via la vente d'objets : l'**offrant** cède un objet et fixe une
 **participation solidaire** — un montant modeste — puis choisit une
-**association**. Le **bénéficiaire** verse cette participation et repart avec
+**association**. Le **demandeur** verse cette participation et repart avec
 l'objet ; **l'argent, lui, va intégralement à l'association**.
 
 Trois acteurs, et il faut bien séparer qui reçoit quoi :
 
 | Acteur           | Ce qu'il fait                                                                                        | Ce qu'il reçoit                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| **Donateur**     | Cède un objet, fixe la participation solidaire, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
-| **Bénéficiaire** | Un étudiant, ou une personne dans le besoin. Verse la participation et vient chercher l'objet        | **L'objet**, à petit prix                                                  |
-| **Association**  | Choisie par le donateur parmi une liste                                                              | **L'argent** versé par le bénéficiaire                                     |
+| **Offrant**     | Cède un objet, fixe la participation solidaire, choisit l'association, définit le créneau de retrait | **Rien.** Il ne touche pas l'argent : c'est ce qui fait de la vente un don |
+| **Demandeur** | Un étudiant, ou une personne dans le besoin. Verse la participation et vient chercher l'objet        | **L'objet**, à petit prix                                                  |
+| **Association**  | Choisie par l'offrant parmi une liste                                                              | **L'argent** versé par le demandeur                                     |
 
 La participation n'est pas un prix de marché : elle reste **modeste**, pour que
 l'objet demeure accessible à qui en a besoin. Ce qu'elle achète, ce n'est pas la
 valeur de l'objet — c'est le geste de soutenir une association.
 
-**Les rôles `donateur` et `beneficiaire` se cumulent** sur un même compte : on
+**Les rôles `offrant` et `demandeur` se cumulent** sur un même compte : on
 peut céder un objet au profit d'une association tout en en réservant un autre.
 D'où un champ `roles` sous forme de **liste**, et non un type unique.
 
@@ -29,13 +29,13 @@ deux règles métier ajoutées par l'équipe :
 | Demande                                        | Origine        | Traduction dans le modèle                                                    |
 | ---------------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
 | Capture photo, vidéo, vocal                    | Clients        | Entité **`Media`**, jointe aux annonces et aux messages                      |
-| Création assistée d'annonce avec IA            | Clients        | Route de **brouillon** : l'IA propose, le donateur valide et publie          |
+| Création assistée d'annonce avec IA            | Clients        | Route de **brouillon** : l'IA propose, l'offrant valide et publie          |
 | Informations locales (météo, quartiers, lieux) | Clients        | **Contexte local** calculé ; position publique ramenée au **quartier IRIS**  |
 | Messagerie contextuelle et actionnable         | Clients        | **Messages système** rattachés à une réservation                             |
 | Avis                                           | Clients        | Entité **`Avis`**, déposée après la remise de l'objet                        |
 | Géolocalisation, favoris, recherche avancée    | Priorisation   | Coordonnées, entité **`Favori`**, filtres et tris, recherches sauvegardées   |
 | Catégories à deux niveaux                      | Barème         | Entité **`Categorie`** hiérarchique, en remplacement de l'énumération figée  |
-| Commentaires publics sur les annonces          | Équipe         | Entité **`Commentaire`** : une question, une réponse du donateur             |
+| Commentaires publics sur les annonces          | Équipe         | Entité **`Commentaire`** : une question, une réponse de l'offrant             |
 | Liste d'attente en cas de désistement          | Équipe         | **`Reservation`** devient une machine à états ; le suivant accepte ou refuse |
 
 Deux changements cassent le contrat précédent — sans conséquence, puisque
@@ -97,7 +97,7 @@ classDiagram
 
     class Annonce {
         +string id
-        +string donateurId
+        +string offrantId
         +string associationId
         +string categorieId
         +string sousCategorieId
@@ -164,8 +164,8 @@ classDiagram
     class Reservation {
         +string id
         +string annonceId
-        +string beneficiaireId
-        +string donateurId
+        +string demandeurId
+        +string offrantId
         +string conversationId
         +string statut
         +string motifAnnulation
@@ -193,7 +193,7 @@ classDiagram
         +date creeLe
     }
 
-    Utilisateur "1" --> "*" Annonce : publie (donateur)
+    Utilisateur "1" --> "*" Annonce : publie (offrant)
     Annonce "*" --> "1" Association : reverse à
     Annonce "*" --> "1" Categorie : classée dans
     Categorie "*" --> "0..1" Categorie : sous-catégorie de
@@ -201,7 +201,7 @@ classDiagram
     Annonce "1" --> "*" Media : illustrée par
     Utilisateur "1" --> "*" Media : téléverse
     Annonce "1" --> "*" Reservation : file de réservations
-    Utilisateur "1" --> "*" Reservation : demande (bénéficiaire)
+    Utilisateur "1" --> "*" Reservation : demande (demandeur)
     Utilisateur "1" --> "*" Favori : marque
     Favori "*" --> "1" Annonce : désigne
     Utilisateur "1" --> "*" RechercheSauvegardee : enregistre
@@ -221,8 +221,8 @@ classDiagram
     class Conversation {
         +string id
         +string annonceId
-        +string donateurId
-        +string beneficiaireId
+        +string offrantId
+        +string demandeurId
         +date creeLe
         +date misAJourLe
     }
@@ -275,8 +275,8 @@ classDiagram
     Message "*" --> "0..1" Reservation : évènement de
     Message "1" --> "*" Media : joint
     Annonce "1" --> "*" Commentaire : questions publiques
-    Utilisateur "1" --> "*" Commentaire : rédige (bénéficiaire)
-    Commentaire "1" *-- "0..1" Reponse : réponse du donateur
+    Utilisateur "1" --> "*" Commentaire : rédige (demandeur)
+    Commentaire "1" *-- "0..1" Reponse : réponse de l'offrant
     Reservation "1" --> "0..2" Avis : évaluée par
     Utilisateur "1" --> "*" Avis : reçoit
 ```
@@ -284,13 +284,13 @@ classDiagram
 ## Notes par entité
 
 - **Utilisateur** — inchangé. Un ou plusieurs `roles` cumulables :
-  `donateur`, `beneficiaire`.
-- **Annonce** — un objet cédé par un donateur. `participation` est
+  `offrant`, `demandeur`.
+- **Annonce** — un objet cédé par un offrant. `participation` est
   **obligatoire (> 0)** et versée à l'**Association** choisie. `statut` :
   `disponible` / `reserve` / `remis` / `retiree`. Une annonce `reserve` accepte
   encore des inscriptions en **liste d'attente**. `assisteeParIA` trace les
   annonces dont le brouillon a été généré par l'IA.
-- **Participation** — le montant demandé au bénéficiaire. Il se veut
+- **Participation** — le montant demandé au demandeur. Il se veut
   **modeste** : c'est une contribution à une cause, pas le prix de l'objet.
   Aucun plafond technique n'est imposé : la modération relève de l'usage, pas du
   contrôle.
@@ -298,7 +298,7 @@ classDiagram
   `parentId = null`, une sous-catégorie pointe vers sa principale. L'annonce
   porte les deux identifiants, pour filtrer à l'un ou l'autre niveau.
   `illustrationUrl` fournit la **photo par défaut** d'une annonce sans média.
-- **Association** — destinataire de l'argent, choisie par le donateur.
+- **Association** — destinataire de l'argent, choisie par l'offrant.
   Enrichie pour être alimentée depuis le **Répertoire national des associations**
   (`numeroRna`), données ouvertes filtrées sur la Métropole de Lyon.
   `thematique` fournit une seconde liste de filtrage.
@@ -307,12 +307,12 @@ classDiagram
 - **Media** — un fichier stocké sur R2 (`doneo-fichiers`). `type` : `photo`,
   `video` ou `audio`. On stocke ses métadonnées pour vérifier qu'un utilisateur
   ne joint que **ses propres** fichiers.
-- **Reservation** — voir la machine à états ci-dessous. `donateurId` est recopié
+- **Reservation** — voir la machine à états ci-dessous. `offrantId` est recopié
   depuis l'annonce pour lister simplement « les demandes reçues ».
   `conversationId` est **toujours renseigné** : c'est là que tombent les
   messages système qui concernent la réservation.
-- **Conversation** — privée, entre un donateur et un bénéficiaire, **unique par
-  couple (annonce, bénéficiaire)**. Elle peut précéder toute réservation, et
+- **Conversation** — privée, entre un offrant et un demandeur, **unique par
+  couple (annonce, demandeur)**. Elle peut précéder toute réservation, et
   survivre à plusieurs : après un désistement, on peut se réinscrire.
 - **Message** — `type` : `utilisateur` ou `systeme`. Un message système n'a pas
   d'`auteurId` ; il porte un `evenement` et la `reservationId` concernée, ce qui
@@ -327,7 +327,7 @@ classDiagram
   les critères, rejouables en un clic.
 
 > **Tous les champs sont en français**, y compris les clés étrangères
-> (`donateurId`, `associationId`, `beneficiaireId`) et les valeurs
+> (`offrantId`, `associationId`, `demandeurId`) et les valeurs
 > d'énumération. Aucun champ en anglais ne doit réapparaître.
 
 ## Réservation et liste d'attente
@@ -337,7 +337,7 @@ ou confirmée. Les demandes suivantes s'inscrivent en **liste d'attente**, dans
 l'ordre d'arrivée. Quand le détenteur se désiste ou refuse, l'objet est
 **proposé au suivant**, qui doit à son tour accepter en payant, ou refuser. Et
 ainsi de suite. **Il n'y a pas de délai automatique** : si la personne ne
-répond pas, c'est le **donateur** qui passe au suivant, d'un bouton.
+répond pas, c'est l'**offrant** qui passe au suivant, d'un bouton.
 
 **L'annonce passe à `reserve` dès la proposition**, et non au paiement : sinon,
 une seconde demande arrivant avant le paiement du premier obtiendrait
@@ -356,7 +356,7 @@ stateDiagram-v2
     proposee --> confirmee : paiement validé (mode test)
     proposee --> annulee : refus, sans réponse, désistement, annonce retirée
 
-    confirmee --> remise : remise confirmée par le donateur
+    confirmee --> remise : remise confirmée par l'offrant
     confirmee --> annulee : désistement, annonce retirée (remboursement fictif)
 
     remise --> [*]
@@ -367,7 +367,7 @@ stateDiagram-v2
 | --------------- | ------------------------------------------------------------------ | ------------------------ |
 | `liste_attente` | Inscrit derrière le détenteur actuel ; `position` calculée          | Non                      |
 | `proposee`      | L'objet vous est proposé : payer pour accepter, ou refuser          | Non                      |
-| `confirmee`     | Participation validée, retrait attendu                              | **Oui**, au bénéficiaire |
+| `confirmee`     | Participation validée, retrait attendu                              | **Oui**, au demandeur |
 | `remise`        | L'objet a changé de mains ; les avis s'ouvrent                     | Non                      |
 | `annulee`       | Fin sans remise ; la raison est dans `motifAnnulation`             | Non                      |
 
@@ -380,11 +380,11 @@ peut faire ensuite.
 
 ```mermaid
 sequenceDiagram
-    participant B1 as Bénéficiaire 1 (détenteur)
+    participant B1 as Demandeur 1 (détenteur)
     participant W as Worker
-    participant B2 as Bénéficiaire 2 (1er en file)
-    participant B3 as Bénéficiaire 3 (2e en file)
-    participant D as Donateur
+    participant B2 as Demandeur 2 (1er en file)
+    participant B3 as Demandeur 3 (2e en file)
+    participant D as Offrant
 
     B1->>W: POST /reservations/{id}/desistement
     W->>W: B1 passe à « annulee » (desistement)
@@ -412,16 +412,16 @@ Les valeurs chiffrées sont des **propositions à valider** avec le PO.
 | Règle                                                        | Valeur proposée                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------- |
 | Taille maximale de la liste d'attente                        | **5** personnes                                         |
-| Réservations en cours simultanées par bénéficiaire           | **3**, liste d'attente comprise — contre l'accaparement |
-| Réservation en cours par couple (annonce, bénéficiaire)      | **1** ; après un désistement, on repasse en fin de file |
+| Réservations en cours simultanées par demandeur           | **3**, liste d'attente comprise — contre l'accaparement |
+| Réservation en cours par couple (annonce, demandeur)      | **1** ; après un désistement, on repasse en fin de file |
 
 - **Pas de délai automatique, donc pas de tâche planifiée.** Un compte à rebours
   demanderait une échéance calculée, une tâche qui tourne en fond et des règles
-  pour les créneaux trop courts. On laisse plutôt la main au donateur : il voit
+  pour les créneaux trop courts. On laisse plutôt la main à l'offrant : il voit
   depuis quand l'objet est proposé (`proposeeLe`) et passe au suivant s'il
   n'a pas de nouvelles.
 - **On ne réserve pas une annonce dont le créneau est terminé** (409). Le
-  donateur le reporte en modifiant l'annonce, et le détenteur en est prévenu
+  offrant le reporte en modifiant l'annonce, et le détenteur en est prévenu
   par un message `creneau_modifie`.
 - **Le plafond de 3 compte aussi la liste d'attente.** Ne compter que les
   réservations proposées ou confirmées laisserait s'inscrire dans d'autres
@@ -456,7 +456,7 @@ n'a aucune raison d'ouvrir l'application d'elle-même :
    la « messagerie actionnable » des maquettes clients : le message porte les
    boutons _Payer pour confirmer_ et _Refuser_.
 2. **Recommandé** : un **e-mail transactionnel** pour ce seul évènement, par le
-   SMTP Brevo déjà ouvert. Sans lui, la file devient injuste : le donateur
+   SMTP Brevo déjà ouvert. Sans lui, la file devient injuste : l'offrant
    risque de passer au suivant avant que la personne sache qu'elle a été
    choisie. **À trancher avec le PO.**
 
@@ -466,36 +466,36 @@ n'a aucune raison d'ouvrir l'application d'elle-même :
 
 ## Commentaires publics
 
-Les bénéficiaires peuvent poser une question sous une annonce ; le donateur y
+Les demandeurs peuvent poser une question sous une annonce ; l'offrant y
 répond. C'est public, et c'est volontairement distinct de la messagerie privée :
 
 |              | Commentaire                      | Conversation                        |
 | ------------ | -------------------------------- | ----------------------------------- |
 | Visibilité   | **Publique**, même non connecté  | Privée, deux participants           |
-| Rédaction    | Bénéficiaire ; réponse du donateur | Les deux parties                  |
+| Rédaction    | Demandeur ; réponse de l'offrant | Les deux parties                  |
 | Profondeur   | **Une question, une réponse**    | Fil continu                         |
 | Usage        | « Est-ce que ça rentre dans une Clio ? » — utile à tous | Organiser le retrait |
 
 - **Un seul niveau de réponse**, portée par le commentaire lui-même
   (`reponse`). Pas de réponse à la réponse : un fil de discussion public est un
   forum, classé WON'T.
-- **Le donateur ne commente pas sa propre annonce** : il y répond. Une personne
+- **L'offrant ne commente pas sa propre annonce** : il y répond. Une personne
   aux deux rôles peut commenter les annonces des autres.
-- La réponse est **unique mais modifiable** par le donateur.
-- **Modération minimale** : l'auteur supprime son commentaire ; le donateur peut
+- La réponse est **unique mais modifiable** par l'offrant.
+- **Modération minimale** : l'auteur supprime son commentaire ; l'offrant peut
   **masquer** un commentaire sur son annonce (`statut` : `visible` /
   `masque`). Un commentaire masqué disparaît pour le public, reste visible du
-  donateur, et peut être rétabli.
+  offrant, et peut être rétabli.
 - On ne commente plus une annonce `remis` ou `retiree`.
 - **L'adresse exacte ne doit pas y fuiter.** Rien n'empêche techniquement un
-  donateur d'écrire sa rue dans une réponse : l'interface l'en avertit au moment
+  offrant d'écrire sa rue dans une réponse : l'interface l'en avertit au moment
   de répondre.
 
 ## Avis
 
 - Ouverts **uniquement** sur une réservation `remise`.
-- **Réciproques** : le bénéficiaire note le donateur, et le donateur peut noter
-  le bénéficiaire — utile contre les absences au rendez-vous. D'où la
+- **Réciproques** : le demandeur note l'offrant, et l'offrant peut noter
+  le demandeur — utile contre les absences au rendez-vous. D'où la
   cardinalité **0..2** : un avis au plus par partie et par réservation.
 - `note` entière de 1 à 5, `commentaire` facultatif de 500 caractères au plus.
   L'avis reste **modifiable** par son auteur, comme sur les maquettes clients.
@@ -555,19 +555,19 @@ sont des numéros valides.
 
 **L'annonce porte exactement les mêmes cinq champs d'adresse que l'utilisateur.**
 Un seul vocabulaire, donc, et la possibilité de préremplir une annonce depuis le
-profil du donateur sans ressaisie. Le principe est identique des deux côtés : on
+profil de l'offrant sans ressaisie. Le principe est identique des deux côtés : on
 publie de quoi juger la proximité, jamais de quoi se présenter à la porte.
 
 - **Niveau public** — `codePostal`, `ville`, `quartier` et la position
   approchée. Visibles **avant** paiement, et même sans être connecté.
 - **Niveau privé** — `numeroRue`, `rue`, `complementAdresse` et les
-  coordonnées exactes. Côté annonce, l'adresse n'est révélée qu'au bénéficiaire
-  d'une réservation **`confirmee`** — et bien sûr au donateur lui-même, par une
+  coordonnées exactes. Côté annonce, l'adresse n'est révélée qu'au demandeur
+  d'une réservation **`confirmee`** — et bien sûr à l'offrant lui-même, par une
   route d'édition qui lui est réservée, pour qu'il voie ce qu'il modifie. Les
   coordonnées exactes, jamais. Côté utilisateur, rien de privé ne sort.
 
 L'adresse se relit tant que la réservation est confirmée — l'ancien contrat ne
-la renvoyait qu'une fois, dans la réponse au paiement : le bénéficiaire la
+la renvoyait qu'une fois, dans la réponse au paiement : le demandeur la
 perdait en rechargeant la page le jour du retrait.
 
 Filtrage par **liste blanche** : on n'énumère que les champs autorisés à sortir,
@@ -575,7 +575,7 @@ jamais les champs à cacher — sinon tout champ ajouté plus tard fuite par dé
 
 ## Création d'annonce assistée par IA
 
-L'IA **rédige un brouillon, elle ne publie jamais**. Le donateur tape une phrase
+L'IA **rédige un brouillon, elle ne publie jamais**. L'offrant tape une phrase
 — ou dicte, ou photographie l'objet — et reçoit un formulaire prérempli qu'il
 corrige avant de publier par la route ordinaire.
 
@@ -587,9 +587,9 @@ corrige avant de publier par la route ordinaire.
   sortie comme n'importe quelle saisie : tout champ invalide est écarté et
   signalé dans `champsIncertains`, que l'interface met en évidence.
 - **La participation est une suggestion**, présentée comme telle. Elle doit
-  rester modeste ; le donateur décide.
+  rester modeste ; l'offrant décide.
 - **Aucune adresse dans la description.** Le texte libre peut contenir la rue du
-  donateur, et une description est publique. Le prompt l'interdit, et le Worker
+  offrant, et une description est publique. Le prompt l'interdit, et le Worker
   vérifie que ni `numeroRue` ni `rue` du profil n'apparaissent dans le texte
   généré.
 - **Consentement** : le texte et les photos partent chez un tiers. L'interface
@@ -644,7 +644,7 @@ la fait passer à `confirmee`.
 
 | Champ                   | Rôle                                                                                                                                                |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `participationDemandee` | La **vraie** participation, celle que voit le bénéficiaire. Figée au moment de la proposition, pour qu'une modification ultérieure ne réécrive pas l'historique |
+| `participationDemandee` | La **vraie** participation, celle que voit le demandeur. Figée au moment de la proposition, pour qu'une modification ultérieure ne réécrive pas l'historique |
 | `montantDebite`         | Ce qui est réellement prélevé : **0**                                                                                                               |
 | `statutPaiement`        | `en_attente` → `paye` (ou `echoue`), puis `rembourse` si une réservation payée est annulée, quel que soit le motif (désistement, annonce retirée). Le passage à `paye` est ce qui débloque l'adresse exacte |
 | `referencePaiement`     | Identifiant renvoyé par le prestataire, preuve que le tunnel a bien été parcouru                                                                    |
@@ -663,18 +663,18 @@ la fait passer à `confirmee`.
 1. **E-mail de proposition** : faut-il l'envoyer quand une place se libère ?
    Recommandé, sinon la personne ne sait pas qu'on attend sa réponse.
 2. **Plafonds** de la liste d'attente : 5 personnes, 3 réservations en cours
-   par bénéficiaire — à confirmer. Un délai de réponse automatique a été écarté
+   par demandeur — à confirmer. Un délai de réponse automatique a été écarté
    pour garder le développement simple.
-3. **Accord du donateur** : les maquettes clients montrent un donateur qui
+3. **Accord de l'offrant** : les maquettes clients montrent un offrant qui
    _confirme_ une demande. Le modèle retient « premier arrivé, premier servi »,
    plus simple et plus équitable. Faut-il ajouter une validation par le
-   donateur ?
+   offrant ?
 4. **Point de rencontre public** : le barème cite des options de _lieu_. Un
    retrait dans un lieu public — une station de métro, un parvis — éviterait de
    révéler le domicile, y compris en cas de désistement après paiement. Non
    modélisé à ce stade.
 5. **Report de rendez-vous** : les maquettes clients le montrent. Il est couvert
-   ici par la modification du créneau par le donateur, sans négociation à deux.
+   ici par la modification du créneau par l'offrant, sans négociation à deux.
 6. **Un troisième type d'utilisateur** : le barème mentionne « Annonceurs /
    Demandeurs / Autre ». Un compte `association`, qui suivrait les montants
    collectés, serait un candidat naturel. Non modélisé.
