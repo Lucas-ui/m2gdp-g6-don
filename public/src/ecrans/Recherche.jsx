@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ListFilter, Loader2, Search, X } from "lucide-react";
+import { ChevronDown, ListFilter, Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
 import CarteAnnonce from "@/components/CarteAnnonce.jsx";
 import { EtatVide, ErreurChargement, ListeEnChargement } from "@/components/Etats.jsx";
@@ -12,6 +12,13 @@ const PAR_PAGE = 20;
 /** Pause de frappe avant de lancer la recherche. */
 const DELAI_SAISIE = 300;
 const CLES_FILTRES = Object.keys(FILTRES_VIDES);
+
+/** Tris proposes (US-15, issue #43). */
+const TRIS = [
+  { valeur: "recent", libelle: "Plus récents" },
+  { valeur: "participation", libelle: "Participation la plus basse" },
+  { valeur: "creneau", libelle: "Créneau le plus proche" },
+];
 
 /** « 1 pépite », « 12 pépites ». */
 const pepites = (n) => `${n} ${n > 1 ? "pépites" : "pépite"}`;
@@ -26,6 +33,7 @@ const pepites = (n) => `${n} ${n > 1 ? "pépites" : "pépite"}`;
 export default function Recherche() {
   const [parametres, setParametres] = useSearchParams();
   const q = parametres.get("q") || "";
+  const tri = TRIS.some((t) => t.valeur === parametres.get("tri")) ? parametres.get("tri") : "recent";
   const cleFiltres = CLES_FILTRES.map((c) => parametres.get(c) || "").join("|");
   const filtres = useMemo(
     () => Object.fromEntries(CLES_FILTRES.map((c, i) => [c, cleFiltres.split("|")[i]])),
@@ -72,7 +80,7 @@ export default function Recherche() {
     return () => clearTimeout(minuteur);
   }, [saisie, q, modifierCriteres]);
 
-  const criteres = useMemo(() => ({ q, ...filtres, tri: "recent", parPage: PAR_PAGE }), [q, filtres]);
+  const criteres = useMemo(() => ({ q, ...filtres, tri, parPage: PAR_PAGE }), [q, filtres, tri]);
 
   useEffect(() => {
     // Une frappe rapide lance plusieurs recherches : seule la derniere compte,
@@ -196,12 +204,35 @@ export default function Recherche() {
         {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
         {!erreur && !annonces && <ListeEnChargement />}
 
-        {annonces && !erreur && (
-          <p className="mb-3 flex items-center gap-2 font-semibold text-ardoise" aria-live="polite">
-            <img src="/illustrations/objet-etoile.svg" alt="" aria-hidden="true" className="size-7" />
-            {resultat.q ? `${pepites(total)} pour « ${resultat.q} »` : `${pepites(total)} à donner`}
-          </p>
-        )}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          {annonces && !erreur ? (
+            <p className="flex items-center gap-2 font-semibold text-ardoise" aria-live="polite">
+              <img src="/illustrations/objet-etoile.svg" alt="" aria-hidden="true" className="size-7" />
+              {resultat.q ? `${pepites(total)} pour « ${resultat.q} »` : `${pepites(total)} à donner`}
+            </p>
+          ) : (
+            <span />
+          )}
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            Trier
+            <span className="relative">
+              <select
+                value={tri}
+                onChange={(e) => modifierCriteres({ tri: e.target.value === "recent" ? "" : e.target.value })}
+                className="h-9 appearance-none rounded-full border border-primary/15 bg-white pr-8 pl-3.5 text-sm font-medium text-violet-fonce outline-none focus-visible:ring-4 focus-visible:ring-primary/15">
+                {TRIS.map((t) => (
+                  <option key={t.valeur} value={t.valeur}>
+                    {t.libelle}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-violet-fonce"
+                aria-hidden="true"
+              />
+            </span>
+          </label>
+        </div>
 
         {annonces?.length === 0 &&
           (actifs.length > 0 ? (

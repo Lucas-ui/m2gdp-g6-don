@@ -13,6 +13,25 @@ import { correspond } from './texte.js';
 /** Statuts visibles par defaut : une annonce reservee accepte encore la file d'attente. */
 const STATUTS_VISIBLES = ['disponible', 'reserve'];
 
+const plusRecente = (a, b) => (b.creeLe || '').localeCompare(a.creeLe || '');
+const debutCreneau = (a) => Date.parse(a.creneauRetrait?.debut) || Infinity;
+const creneauTermine = (a) => (Date.parse(a.creneauRetrait?.fin) || 0) < Date.now();
+
+/**
+ * Tris de GET /api/annonces. A egalite, les plus recentes d'abord : l'ordre
+ * reste stable d'une page a l'autre.
+ *  - recent : les plus recentes d'abord (par defaut) ;
+ *  - participation : la plus petite d'abord, pour qui compte chaque euro ;
+ *  - creneau : le retrait le plus proche d'abord ; un creneau deja termine
+ *    passe en fin de liste, il n'est plus possible d'y aller.
+ */
+const TRIS = {
+  recent: plusRecente,
+  participation: (a, b) => a.participation - b.participation || plusRecente(a, b),
+  creneau: (a, b) =>
+    creneauTermine(a) - creneauTermine(b) || debutCreneau(a) - debutCreneau(b) || plusRecente(a, b),
+};
+
 /** Valeurs d'etat de l'objet (schema EtatObjet). */
 export const ETATS = ['neuf', 'tres_bon_etat', 'bon_etat', 'usage'];
 
@@ -142,6 +161,13 @@ export function rechercherAnnonces(contexte, parametres) {
   const etat = parametres.get('etat');
   if (etat && !ETATS.includes(etat)) erreurs.push(`« etat » doit valoir : ${ETATS.join(', ')}.`);
 
+  const tri = parametres.get('tri') || 'recent';
+  if (tri === 'proximite') {
+    erreurs.push('Le tri par proximité n’est pas encore disponible.');
+  } else if (!TRIS[tri]) {
+    erreurs.push(`« tri » doit valoir : ${Object.keys(TRIS).join(', ')}.`);
+  }
+
   const brutMax = parametres.get('participationMax');
   const participationMax = brutMax === null || brutMax === '' ? null : Number(brutMax);
   if (participationMax !== null && (!Number.isFinite(participationMax) || participationMax < 0)) {
@@ -158,8 +184,7 @@ export function rechercherAnnonces(contexte, parametres) {
     // Chaque mot doit figurer dans le titre ou la description, sans tenir
     // compte des accents ni de la casse : « etagere » trouve « Étagère ».
     .filter((a) => !q || correspond(q, a.titre, a.description))
-    // Tri par defaut : les plus recentes d'abord.
-    .sort((a, b) => (b.creeLe || '').localeCompare(a.creeLe || ''));
+    .sort(TRIS[tri]);
 
   const debut = (page.valeur - 1) * parPage.valeur;
   return {
