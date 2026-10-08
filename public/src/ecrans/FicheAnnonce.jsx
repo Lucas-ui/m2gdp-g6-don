@@ -1,0 +1,223 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
+import { CalendarDays, ChevronLeft, Gift, Heart, Lock, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button.jsx";
+import ImageAnnonce from "@/components/ImageAnnonce.jsx";
+import { EtatVide, ErreurChargement } from "@/components/Etats.jsx";
+import { chargerAnnonce } from "@/lib/api.js";
+import {
+  LIBELLES_ETAT,
+  creneauPasse,
+  formaterCreneau,
+  formaterParticipation,
+  lieuAnnonce,
+  nomOffrant,
+} from "@/lib/format.js";
+
+/** Bouton rond blanc pose sur la photo, comme sur la maquette. */
+function BoutonSurPhoto({ children, ...props }) {
+  return (
+    <button
+      type="button"
+      className="grid size-11 place-items-center rounded-2xl bg-white/95 text-ardoise shadow-md backdrop-blur"
+      {...props}>
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Fiche d'une annonce (US-9, issue #37), d'apres l'ecran 08 de la maquette.
+ *
+ * Elle montre tout ce qu'il faut pour se decider AVANT de verser la
+ * participation : l'objet, la participation et l'association, l'offrant, le
+ * creneau et le lieu APPROXIMATIF. L'adresse exacte n'est revelee qu'apres la
+ * participation : elle n'arrive d'ailleurs jamais dans cette page, l'API ne
+ * la renvoie pas.
+ *
+ * La reservation (et la messagerie) arrivent avec leurs US : le bouton est
+ * present, a sa place, mais desactive et annonce comme tel.
+ */
+export default function FicheAnnonce({ profil }) {
+  const { id } = useParams();
+  const naviguer = useNavigate();
+  const [annonce, setAnnonce] = useState(undefined); // undefined = chargement, null = introuvable
+  const [erreur, setErreur] = useState(null);
+
+  const charger = useCallback(() => {
+    setErreur(null);
+    setAnnonce(undefined);
+    chargerAnnonce(id)
+      .then(setAnnonce)
+      .catch((e) => setErreur(e.message));
+  }, [id]);
+
+  useEffect(charger, [charger]);
+
+  // Retour vers l'ecran d'ou l'on vient — liste, recherche filtree — tel qu'on
+  // l'avait laisse. Sans historique (lien ouvert directement), vers l'accueil.
+  const revenir = () => (window.history.state?.idx > 0 ? naviguer(-1) : naviguer("/"));
+
+  if (erreur || annonce === null) {
+    return (
+      <div className="px-5 pt-5">
+        <BoutonSurPhoto onClick={revenir} aria-label="Retour">
+          <ChevronLeft className="size-5" aria-hidden="true" />
+        </BoutonSurPhoto>
+        <div className="mt-6">
+          {erreur ? (
+            <ErreurChargement message={erreur} surReessayer={charger} />
+          ) : (
+            <EtatVide
+              illustration="/illustrations/objet-carton.svg"
+              titre="Annonce introuvable"
+              action={
+                <Button asChild variant="doneo" size="pilule" className="w-full">
+                  <Link to="/">Retour à l’accueil</Link>
+                </Button>
+              }>
+              Cette annonce n’existe pas, ou son offrant l’a retirée.
+            </EtatVide>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (annonce === undefined) {
+    return (
+      <div aria-busy="true" aria-label="Chargement de l’annonce" className="animate-pulse">
+        <div className="h-72 bg-lavande" />
+        <div className="space-y-3 px-5 pt-5">
+          <div className="h-7 w-3/4 rounded-full bg-lavande" />
+          <div className="h-5 w-1/2 rounded-full bg-muted" />
+          <div className="h-20 rounded-3xl bg-lavande" />
+        </div>
+      </div>
+    );
+  }
+
+  const estLaMienne = annonce.offrant?.id === profil.id;
+  const remise = annonce.statut === "remis";
+  const reservee = annonce.statut === "reserve";
+  const termine = creneauPasse(annonce.creneauRetrait);
+  const montant = formaterParticipation(annonce.participation);
+
+  return (
+    // Grand ecran : visuel a gauche, qui reste a l'ecran, informations a droite.
+    <article className="pb-36 lg:grid lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-12 lg:pb-0">
+      <div className="relative lg:sticky lg:top-[calc(var(--hauteur-entete)+2rem)]">
+        <ImageAnnonce
+          annonce={annonce}
+          className="h-72 w-full md:aspect-4/3 md:h-auto lg:rounded-[2rem] lg:shadow-[0_24px_60px_-36px_rgb(155_77_219/45%)]"
+        />
+        {/* Fixe : le retour reste a portee quand on lit le bas de la fiche. */}
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md justify-between p-4 md:max-w-3xl lg:absolute lg:max-w-none">
+          <span className="pointer-events-auto">
+            <BoutonSurPhoto onClick={revenir} aria-label="Retour">
+              <ChevronLeft className="size-5" aria-hidden="true" />
+            </BoutonSurPhoto>
+          </span>
+        </div>
+      </div>
+
+      <div className="px-5 pt-5 lg:p-0">
+        <h1 className="doneo-titre text-[1.75rem] leading-tight lg:text-[2.6rem]">{annonce.titre}</h1>
+
+        <ul className="mt-3 flex flex-wrap gap-2 text-sm font-medium" aria-label="Caractéristiques">
+          {annonce.sousCategorie && (
+            <li className="rounded-full bg-pervenche px-3 py-1 text-ardoise">{annonce.sousCategorie.libelle}</li>
+          )}
+          <li className="rounded-full bg-menthe px-3 py-1 text-ardoise">{LIBELLES_ETAT[annonce.etat]}</li>
+          <li className="flex items-center gap-1 rounded-full border border-primary/15 bg-white px-3 py-1 text-ardoise">
+            <MapPin className="size-3.5" aria-hidden="true" />
+            {lieuAnnonce(annonce)}
+          </li>
+        </ul>
+
+        {(reservee || remise) && (
+          <p className="mt-4 rounded-2xl bg-citron/70 p-3.5 text-sm text-ardoise">
+            {remise
+              ? "Cet objet a déjà trouvé preneur. Merci pour l’association !"
+              : "Cet objet est déjà réservé. Vous pourrez rejoindre la liste d’attente : il vous sera proposé si la personne se désiste."}
+          </p>
+        )}
+
+        <div className="mt-5 flex items-center gap-4 rounded-3xl bg-lavande p-4">
+          <img src="/illustrations/objet-coeur.svg" alt="" aria-hidden="true" className="size-12 shrink-0" />
+          <div className="min-w-0">
+            <p className="font-titre text-[1.35rem] leading-tight font-semibold text-ardoise">
+              {montant} <span className="text-base font-medium text-violet-fonce">— participation</span>
+            </p>
+            {annonce.association && (
+              <p className="mt-0.5 text-sm text-ardoise">Reversée à {annonce.association.nom}</p>
+            )}
+          </div>
+        </div>
+
+          {/* Barre d'action : fixe en bas sur mobile, a la place du menu ; sur grand
+              ecran, carte juste sous la participation, la ou le regard se pose. */}
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md rounded-t-[1.75rem] border-t md:max-w-3xl border-primary/10 bg-white px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)] lg:static lg:mt-5 lg:max-w-none lg:rounded-3xl lg:border lg:p-5 lg:shadow-[0_16px_40px_-28px_rgb(155_77_219/45%)]">
+          {estLaMienne ? (
+            <Button asChild variant="doneoSecondaire" size="pilule" className="w-full">
+              <Link to="/">Retour à l’accueil</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="doneo" size="pilule" className="w-full" disabled aria-describedby="reservation-bientot">
+                <Heart className="size-5 fill-current" aria-hidden="true" />
+                {remise ? "Objet déjà remis" : reservee ? "Rejoindre la liste d’attente" : `Réserver pour ${montant}`}
+              </Button>
+              {!remise && (
+                <p id="reservation-bientot" className="mt-2 text-center text-xs text-muted-foreground">
+                  La réservation ouvre très bientôt.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        {annonce.description && (
+          <p className="mt-5 leading-7 text-ardoise whitespace-pre-line text-pretty">{annonce.description}</p>
+        )}
+
+        <div className="doneo-carte mt-5 flex items-center gap-3.5 p-4">
+          <span
+            aria-hidden="true"
+            className="grid size-12 shrink-0 place-items-center rounded-full bg-lavande font-titre text-lg font-semibold text-violet-fonce">
+            {`${annonce.offrant?.prenom?.[0] || ""}${annonce.offrant?.initialeNom?.[0] || ""}`.toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-ardoise">{nomOffrant(annonce.offrant)}</p>
+            <p className="text-sm text-muted-foreground">
+              {estLaMienne ? "C’est votre annonce" : "Propose cet objet"}
+            </p>
+          </div>
+          <Gift className="size-6 text-ardoise" aria-hidden="true" />
+        </div>
+
+        <h2 className="doneo-etiquette mt-6">Créneau de retrait</h2>
+        <p className="mt-2 flex items-center gap-2.5 font-medium text-ardoise">
+          <CalendarDays className="size-5 text-primary" aria-hidden="true" />
+          {formaterCreneau(annonce.creneauRetrait)}
+        </p>
+        {termine && !remise && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ce créneau est passé : l’offrant doit en proposer un nouveau.
+          </p>
+        )}
+
+        <h2 className="doneo-etiquette mt-6">Lieu de retrait</h2>
+        <p className="mt-2 flex items-center gap-2.5 font-medium text-ardoise">
+          <MapPin className="size-5 text-primary" aria-hidden="true" />
+          {[annonce.quartier, annonce.codePostal].filter(Boolean).join(" · ")}
+        </p>
+        <p className="mt-1.5 flex items-start gap-2 text-sm text-muted-foreground">
+          <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          L’adresse exacte vous est communiquée une fois votre participation validée.
+        </p>
+      </div>
+
+    </article>
+  );
+}

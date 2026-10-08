@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240" role="img" aria-label="Tables et bureaux">
+  <rect width="320" height="240" fill="#E7D6F5"/>
+  <circle cx="44" cy="206" r="58" fill="#C6A3EC" fill-opacity=".45"/>
+  <circle cx="292" cy="30" r="44" fill="#FFFFFF" fill-opacity=".35"/>
+  <circle cx="160" cy="120" r="78" fill="#FFFFFF" stroke="#2F4F5C" stroke-width="3"/>
+  <ellipse cx="160" cy="176" rx="40" ry="6" fill="#C6A3EC" fill-opacity=".7"/>
+  <g transform="translate(112 72) scale(4)" fill="none" stroke="#2F4F5C" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10.293 2.293a1 1 0 0 1 1.414 0l2.5 2.5 5.994 1.227a1 1 0 0 1 .506 1.687l-7 7a1 1 0 0 1-1.687-.506l-1.227-5.994-2.5-2.5a1 1 0 0 1 0-1.414z" />
+  <path d="m14.207 4.793-3.414 3.414" />
+  <path d="M3 20a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />
+  <path d="m9.086 6.5-4.793 4.793a1 1 0 0 0-.18 1.17L7 18" />
+  </g>
+  <path d="M226 64 216.5 54.5a6.4 6.4 0 0 1 9.05-9.05L226 46l.45-.55a6.4 6.4 0 0 1 9.05 9.05z" fill="#9B4DDB" stroke="#2F4F5C" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M84 53Q84 62 93 62Q84 62 84 71Q84 62 75 62Q84 62 84 53Z" fill="#2F4F5C"/>
+  <path d="M246 165Q246 172 253 172Q246 172 246 179Q246 172 239 172Q246 172 246 165Z" fill="#9B4DDB"/>
+  <circle cx="96" cy="182" r="4" fill="#E23C8E" fill-opacity=".55"/>
+  <circle cx="236" cy="96" r="3.4" fill="#2F4F5C"/>
+</svg>

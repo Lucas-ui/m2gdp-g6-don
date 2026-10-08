@@ -121,6 +121,42 @@ npm run dev      # serveur de dev, rechargement à chaud
 npm run build    # produit public/dist
 ```
 
+### Développer avec le Worker en local
+
+Pour tester une route du Worker avant qu'elle soit déployée :
+
+1. Créer `workers/.dev.vars` (git-ignoré) avec les deux secrets du Worker, la
+   clé de service sur une seule ligne et entre apostrophes :
+   ```
+   FIREBASE_SERVICE_ACCOUNT='{"type":"service_account",...}'
+   FIREBASE_API_KEY='AIza...'
+   ```
+2. Lancer le Worker : `cd workers && npx wrangler dev --port 8787`.
+3. Créer `public/.env.development.local` (git-ignoré) :
+   `VITE_API_BASE=http://localhost:8787`, puis relancer `npm run dev`.
+
+Sans ce fichier, le front local appelle le Worker **en ligne**. Le Worker local
+lit et écrit la **vraie** base Firestore.
+
+### Tester sur un téléphone (même Wi-Fi)
+
+Le serveur du front relaie `/api` vers le Worker local (`server.proxy` dans
+`vite.config.js`) : le téléphone n'a besoin de joindre que lui. Le pare-feu
+Windows bloque en effet les connexions entrantes vers le Worker local.
+
+1. Trouver l'adresse du PC sur le Wi-Fi (`ipconfig`), par exemple
+   `192.168.1.18`.
+2. Lancer le Worker comme d'habitude, puis le front ouvert sur le réseau, en
+   lui faisant viser sa propre adresse :
+   ```bash
+   VITE_API_BASE=http://192.168.1.18:5180 npx vite --host 0.0.0.0 --port 5180
+   ```
+3. Pour se connecter par lien magique depuis le téléphone, ajouter
+   `192.168.1.18` aux **domaines autorisés** de Firebase Auth (Console Firebase
+   › Authentication › Paramètres). L'adresse change d'un réseau à l'autre :
+   la retirer une fois les tests finis.
+4. Sur le téléphone : `http://192.168.1.18:5180`.
+
 Particularités liées au fait que l'app vit dans `public/`, pour respecter la
 convention du cours (`/public` = App Frontend) :
 

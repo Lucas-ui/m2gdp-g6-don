@@ -201,7 +201,7 @@ paths:
   /api/associations:
     get:
       tags: ["Référentiels"]
-      summary: "❤️ Lister les associations demandeurs"
+      summary: "❤️ Lister les associations bénéficiaires"
       description: >
         Liste alimentée depuis le Répertoire national des associations, filtrée
         sur la Métropole de Lyon.
@@ -401,8 +401,8 @@ paths:
       description: >
         L'offrant est repris du jeton vérifié, pas du corps : `offrantId` ne
         se déclare pas soi-même. À la publication, le Worker géocode l'adresse
-        complète — coordonnées exactes, privées — et en déduit le quartier IRIS
-        et la position approchée, publics.
+        complète — coordonnées exactes, privées — et en déduit le quartier
+        et la position approchée — décalée de 200 à 500 m —, publics.
       security: [{ jetonFirebase: [] }]
       requestBody:
         required: true
@@ -426,8 +426,8 @@ paths:
       summary: "📄 Consulter une annonce"
       description: >
         Fiche publique. L'adresse exacte n'y figure jamais, pour personne : le
-        demandeur d'une réservation confirmée la lit sur la réservation, le
-        offrant sur `GET /api/annonces/{id}/edition`. Le schéma public reste
+        demandeur d'une réservation confirmée la lit sur la réservation,
+        l'offrant sur `GET /api/annonces/{id}/edition`. Le schéma public reste
         ainsi une liste blanche, sans champ privé à masquer selon l'appelant.
       security: [{}, { jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -772,8 +772,8 @@ paths:
       tags: ["Conversations"]
       summary: "✉️ Contacter l'offrant"
       description: >
-        Crée ou retrouve la conversation entre le demandeur connecté et le
-        offrant de l'annonce — elle est unique par couple (annonce,
+        Crée ou retrouve la conversation entre le demandeur connecté et
+        l'offrant de l'annonce — elle est unique par couple (annonce,
         demandeur). Le premier message est facultatif à la création.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -991,8 +991,8 @@ paths:
         "404": { $ref: "#/components/responses/Introuvable" }
         "409":
           description: >
-            La réservation n'est pas `proposee` — par exemple parce que le
-            offrant est passé au suivant faute de réponse.
+            La réservation n'est pas `proposee` — par exemple parce que
+            l'offrant est passé au suivant faute de réponse.
 
   /api/reservations/{id}/refus:
     post:
@@ -1095,8 +1095,8 @@ paths:
       tags: ["Avis"]
       summary: "⭐ Laisser un avis sur l'autre partie"
       description: >
-        Uniquement sur une réservation `remise`. Le demandeur note le
-        offrant, l'offrant peut noter le demandeur : un avis au plus par
+        Uniquement sur une réservation `remise`. Le demandeur note
+        l'offrant, l'offrant peut noter le demandeur : un avis au plus par
         partie et par réservation.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -1268,6 +1268,10 @@ components:
       properties:
         id: { type: string }
         prenom: { type: string }
+        initialeNom:
+          type: string
+          description: "Initiale du nom suivie d'un point (« M. »), pour afficher « Claire M. »"
+          example: "M."
         photoUrl: { type: string, nullable: true }
         noteMoyenne:
           type: number
@@ -1529,10 +1533,10 @@ components:
         quartier:
           type: string
           nullable: true
-          description: "📍 Libellé IRIS ; `null` hors Métropole de Lyon"
+          description: "📍 Arrondissement (« Lyon 7e ») ou commune"
         latitudeApprochee:
           type: number
-          description: "📍 Centroïde du quartier IRIS, ou du code postal — jamais la position exacte"
+          description: "📍 Position exacte décalée de 200 à 500 m, décalage dérivé de l'adresse (un seul point par adresse) — jamais la position exacte"
         longitudeApprochee: { type: number }
         distanceKm:
           type: number
@@ -1626,7 +1630,7 @@ components:
         quartier:
           type: string
           nullable: true
-          description: "Libellé IRIS — Métropole de Lyon"
+          description: "Arrondissement ou commune"
         meteoCreneau:
           type: object
           nullable: true

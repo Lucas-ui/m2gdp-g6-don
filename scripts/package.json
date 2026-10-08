@@ -1,0 +1,13 @@
+{
+  "name": "doneo-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Scripts de donnees Doneo : referentiels, illustrations, donnees de demonstration",
+  "scripts": {
+    "illustrations": "node donnees/generer-illustrations.mjs",
+    "categories": "node donnees/charger-categories.mjs"
+  },
+  "devDependencies": {
+    "lucide-static": "1.53.0"
+  }
+}

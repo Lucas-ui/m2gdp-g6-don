@@ -10,6 +10,13 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   publicDir: 'static',
+  // En developpement, le serveur relaie /api vers le Worker lance par
+  // `wrangler dev`. Utile pour tester sur un telephone : il n'a alors besoin
+  // de joindre que ce serveur (voir docs/SETUP.md). Sans effet tant que
+  // VITE_API_BASE ne vise pas ce serveur lui-meme.
+  server: {
+    proxy: { '/api': 'http://127.0.0.1:8787' },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

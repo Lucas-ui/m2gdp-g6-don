@@ -9,11 +9,18 @@
  *   GET  /api/profil              profil de l'utilisateur connecte
  *   PUT  /api/profil              cree ou met a jour son profil
  *   GET  /api/utilisateurs        annuaire public des inscrits
+ *   GET  /api/categories          arbre des categories
+ *   GET  /api/associations        associations beneficiaires
+ *   GET  /api/annonces            recherche d'annonces (forme publique)
+ *   GET  /api/annonces/{id}       fiche publique d'une annonce
  *   GET  /api/health              healthcheck
  */
 
 import { verifierJetonIdentite, jetonService } from './google.js';
 import { lireDocument, ecrireDocument, listerCollection } from './firestore.js';
+import { chargerAnnonce, rechercherAnnonces } from './annonces.js';
+import { arbreCategories, associations, versAssociation } from './referentiels.js';
+import { correspond } from './texte.js';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/datastore',
@@ -266,6 +273,51 @@ export default {
           ville: ville || '',
         }));
         return json({ utilisateurs: publics, total: publics.length }, 200, cors);
+      }
+
+      /* --- Categories --------------------------------------------------- */
+      if (pathname === '/api/categories' && request.method === 'GET') {
+        const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
+        const categories = await arbreCategories(jeton, env.FIREBASE_PROJECT_ID);
+        return json({ categories }, 200, cors);
+      }
+
+      /* --- Associations ------------------------------------------------- */
+      if (pathname === '/api/associations' && request.method === 'GET') {
+        const parametres = new URL(request.url).searchParams;
+        const q = parametres.get('q') || '';
+        const thematique = parametres.get('thematique');
+        const codePostal = parametres.get('codePostal');
+
+        const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
+        const liste = (await associations(jeton, env.FIREBASE_PROJECT_ID))
+          .filter((a) => !q || correspond(q, a.nom, a.description))
+          .filter((a) => !thematique || a.thematique === thematique)
+          .filter((a) => !codePostal || a.codePostal === codePostal)
+          .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
+          .map(versAssociation);
+        return json({ associations: liste }, 200, cors);
+      }
+
+      /* --- Annonces ------------------------------------------------------ */
+      if (pathname === '/api/annonces' && request.method === 'GET') {
+        const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
+        const resultat = await rechercherAnnonces(
+          jeton,
+          env.FIREBASE_PROJECT_ID,
+          new URL(request.url).searchParams,
+        );
+        if (resultat.erreurs) return json({ erreurs: resultat.erreurs }, 422, cors);
+        return json(resultat, 200, cors);
+      }
+
+      const routeAnnonce = /^\/api\/annonces\/([A-Za-z0-9_-]{1,64})$/.exec(pathname);
+      if (routeAnnonce && request.method === 'GET') {
+        const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
+        const annonce = await chargerAnnonce(jeton, env.FIREBASE_PROJECT_ID, routeAnnonce[1]);
+        return annonce
+          ? json(annonce, 200, cors)
+          : json({ erreur: 'Cette annonce n’existe pas ou a été retirée.' }, 404, cors);
       }
 
       return json({ erreur: 'Route non trouvée', chemin: pathname }, 404, cors);

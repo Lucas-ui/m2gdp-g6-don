@@ -1,0 +1,122 @@
+{
+  "description": "Associations que l'offrant peut choisir. Ce sont de vraies associations de la Métropole de Lyon : nom, numéro RNA et siège viennent de l'annuaire des entreprises (recherche-entreprises.api.gouv.fr), consulté le 08/10/2026. Les présentations sont des résumés rédigés pour la démonstration.",
+  "associations": [
+    {
+      "id": "restos-du-coeur-rhone",
+      "nom": "Les Restos du Cœur du Rhône",
+      "description": "Aide alimentaire, accompagnement et insertion des personnes démunies dans le Rhône.",
+      "thematique": "Aide alimentaire",
+      "numeroRna": "W691055508",
+      "codePostal": "69007",
+      "ville": "Lyon"
+    },
+    {
+      "id": "banque-alimentaire-rhone",
+      "nom": "Banque alimentaire du Rhône",
+      "description": "Collecte et redistribution de denrées aux associations d'aide alimentaire du département.",
+      "thematique": "Aide alimentaire",
+      "numeroRna": "W691052096",
+      "codePostal": "69150",
+      "ville": "Décines-Charpieu"
+    },
+    {
+      "id": "secours-populaire-rhone",
+      "nom": "Secours populaire français",
+      "description": "Aide matérielle et alimentaire, accès aux vacances et à la culture pour les personnes en difficulté.",
+      "thematique": "Lutte contre la pauvreté",
+      "numeroRna": "W691052053",
+      "codePostal": "69007",
+      "ville": "Lyon"
+    },
+    {
+      "id": "epicerie-arc-en-ciel",
+      "nom": "Épicerie solidaire Arc-en-Ciel",
+      "description": "Épicerie solidaire du Secours catholique dans le 8e arrondissement de Lyon.",
+      "thematique": "Aide alimentaire",
+      "numeroRna": "W691075009",
+      "codePostal": "69008",
+      "ville": "Lyon"
+    },
+    {
+      "id": "gaelis",
+      "nom": "GAELIS",
+      "description": "Fédération des associations étudiantes de Lyon, qui porte des actions de solidarité étudiante.",
+      "thematique": "Précarité étudiante",
+      "numeroRna": "W691056315",
+      "codePostal": "69100",
+      "ville": "Villeurbanne"
+    },
+    {
+      "id": "solidarite-etudiante-lyon",
+      "nom": "Collectif de solidarité étudiante Lyon",
+      "description": "Entraide et aide alimentaire entre étudiants lyonnais.",
+      "thematique": "Précarité étudiante",
+      "numeroRna": "W691102313",
+      "codePostal": "69005",
+      "ville": "Lyon"
+    },
+    {
+      "id": "habitat-humanisme",
+      "nom": "Habitat et Humanisme Rhône-Alpes",
+      "description": "Logement et accompagnement de personnes en difficulté.",
+      "thematique": "Logement",
+      "numeroRna": "W691057620",
+      "codePostal": "69300",
+      "ville": "Caluire-et-Cuire"
+    },
+    {
+      "id": "foyer-notre-dame-sans-abri",
+      "nom": "Foyer Notre-Dame des Sans-Abri",
+      "description": "Accueil, hébergement et accompagnement des personnes sans abri.",
+      "thematique": "Logement",
+      "numeroRna": "W691089204",
+      "codePostal": "69007",
+      "ville": "Lyon"
+    },
+    {
+      "id": "atelier-emmaus",
+      "nom": "Atelier Emmaüs",
+      "description": "Réemploi d'objets et de matériaux, et insertion par l'activité.",
+      "thematique": "Réemploi et insertion",
+      "numeroRna": "W691093415",
+      "codePostal": "69100",
+      "ville": "Villeurbanne"
+    },
+    {
+      "id": "envie-rhone",
+      "nom": "Envie Rhône",
+      "description": "Rénovation d'électroménager et insertion professionnelle.",
+      "thematique": "Réemploi et insertion",
+      "numeroRna": "W691061357",
+      "codePostal": "69007",
+      "ville": "Lyon"
+    },
+    {
+      "id": "le-toucan",
+      "nom": "Le Toucan, ressourcerie pour enfants",
+      "description": "Collecte et revente solidaire d'objets pour les enfants.",
+      "thematique": "Enfance",
+      "numeroRna": "W691106872",
+      "codePostal": "69100",
+      "ville": "Villeurbanne"
+    },
+    {
+      "id": "sport-dans-la-ville",
+      "nom": "Sport dans la Ville",
+      "description": "Insertion sociale et professionnelle des jeunes par le sport.",
+      "thematique": "Insertion des jeunes",
+      "numeroRna": "W691057534",
+      "codePostal": "69009",
+      "ville": "Lyon"
+    },
+    {
+      "id": "association-le-mas",
+      "nom": "Association Le MAS",
+      "description": "Accompagnement social et soutien aux personnes vulnérables.",
+      "thematique": "Lutte contre la pauvreté",
+      "numeroRna": "W691053567",
+      "codePostal": "69007",
+      "ville": "Lyon"
+    }
+  ]
+}

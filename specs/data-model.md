@@ -420,8 +420,8 @@ Les valeurs chiffrées sont des **propositions à valider** avec le PO.
   pour les créneaux trop courts. On laisse plutôt la main à l'offrant : il voit
   depuis quand l'objet est proposé (`proposeeLe`) et passe au suivant s'il
   n'a pas de nouvelles.
-- **On ne réserve pas une annonce dont le créneau est terminé** (409). Le
-  offrant le reporte en modifiant l'annonce, et le détenteur en est prévenu
+- **On ne réserve pas une annonce dont le créneau est terminé** (409).
+  L'offrant le reporte en modifiant l'annonce, et le détenteur en est prévenu
   par un message `creneau_modifie`.
 - **Le plafond de 3 compte aussi la liste d'attente.** Ne compter que les
   réservations proposées ou confirmées laisserait s'inscrire dans d'autres
@@ -523,15 +523,24 @@ exacte. D'où deux niveaux, calqués sur ceux de l'adresse :
 
 | Champ                                        | Source                                        | Visibilité                           |
 | -------------------------------------------- | --------------------------------------------- | ------------------------------------ |
-| `latitude`, `longitude`                      | Géocodage de l'adresse complète (API Adresse) | 🔒 **jamais exposées**               |
-| `latitudeApprochee`, `longitudeApprochee`    | Centroïde du **quartier IRIS**                | 🌍 publiques                         |
-| `quartier`                                   | Libellé IRIS de la Métropole de Lyon          | 🌍 public                            |
+| `latitude`, `longitude`                      | Géocodage de l'adresse complète (Géoplateforme) | 🔒 **jamais exposées**             |
+| `latitudeApprochee`, `longitudeApprochee`    | Position exacte **décalée de 200 à 500 m**, décalage **dérivé de l'adresse** | 🌍 publiques |
+| `quartier`                                   | Arrondissement (« Lyon 7e ») ou commune, renvoyé par le géocodage | 🌍 public          |
 
+- **Décalage plutôt que centroïde IRIS** : la version précédente prévoyait le
+  centre du quartier IRIS. Le décalage protège autant — il ne désigne pas un
+  immeuble —, ne demande aucun fichier de contours, et évite d'empiler toutes
+  les annonces d'un quartier sur un même point de la carte.
+- **Un seul point public par adresse.** Le décalage (distance et direction) est
+  calculé à partir d'une empreinte SHA-256 de `numeroRue|rue|codePostal`, et
+  non tiré au hasard pour chaque annonce. Sinon, les annonces d'un même offrant
+  formeraient un cercle autour de chez lui, dont le centre trahirait son
+  domicile. La publication d'une annonce doit appliquer exactement ce calcul.
 - **Toute distance renvoyée est calculée sur la position approchée, puis
   arrondie à 0,5 km** — « à moins d'un kilomètre » en deçà. Une distance exacte,
   interrogée depuis trois points différents, suffit à trianguler un domicile.
-- Hors de la Métropole de Lyon, où les contours IRIS ne sont pas fournis, la
-  position approchée retombe sur le **centroïde du code postal**.
+- Le géocodage passe par la **Géoplateforme** (`data.geopf.fr/geocodage`), qui
+  a pris la suite de l'API Adresse, avec les mêmes paramètres et réponses.
 - La position de celui qui cherche n'est **jamais stockée** : le front la passe
   en paramètre, ou on part du centroïde de son code postal.
 
@@ -667,8 +676,8 @@ la fait passer à `confirmee`.
    pour garder le développement simple.
 3. **Accord de l'offrant** : les maquettes clients montrent un offrant qui
    _confirme_ une demande. Le modèle retient « premier arrivé, premier servi »,
-   plus simple et plus équitable. Faut-il ajouter une validation par le
-   offrant ?
+   plus simple et plus équitable. Faut-il ajouter une validation par
+   l'offrant ?
 4. **Point de rencontre public** : le barème cite des options de _lieu_. Un
    retrait dans un lieu public — une station de métro, un parvis — éviterait de
    révéler le domicile, y compris en cas de désistement après paiement. Non

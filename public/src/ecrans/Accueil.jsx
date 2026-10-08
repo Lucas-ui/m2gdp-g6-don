@@ -1,231 +1,186 @@
-import { useEffect, useState } from "react";
-import { Heart, Home, LogOut, MapPin, Plus, Search, User } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
+import { Heart, Search } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
-import Logo from "@/components/Logo.jsx";
-import { listerUtilisateurs } from "@/lib/api.js";
-import { seDeconnecter } from "@/lib/auth.js";
-
-const LIBELLE_ROLE = {
-  offrant: "Offrant",
-  demandeur: "Demandeur",
-};
-
-/** Teinte d'accompagnement de la pastille, choisie d'apres le prenom pour que
- *  l'annuaire soit colore sans etre aleatoire d'un affichage a l'autre. */
-const TONS = ["bg-lavande", "bg-menthe", "bg-pervenche", "bg-citron"];
-const ton = (graine = "") =>
-  TONS[[...graine].reduce((n, c) => n + c.charCodeAt(0), 0) % TONS.length];
-
-/** « Offrant », « Demandeur », ou « Offrant et demandeur ». */
-function libelleRoles(roles = []) {
-  const noms = roles.map((r) => LIBELLE_ROLE[r] || r);
-  if (noms.length === 0) return "Rôle non précisé";
-  if (noms.length === 1) return noms[0];
-  return `${noms[0]} et ${noms.slice(1).join(", ").toLowerCase()}`;
-}
+import CarteAnnonce from "@/components/CarteAnnonce.jsx";
+import { EtatVide, ErreurChargement, ListeEnChargement } from "@/components/Etats.jsx";
+import BandeauAccueil from "@/components/BandeauAccueil.jsx";
+import CommentCaMarche from "@/components/CommentCaMarche.jsx";
+import EnTeteCollant from "@/components/EnTeteCollant.jsx";
+import { Marque } from "@/components/Logo.jsx";
+import { chargerCategories, chercherAnnonces } from "@/lib/api.js";
+import { useGrandEcran } from "@/lib/ecran.js";
 
 /**
- * « 69002 Lyon ». Renvoie une chaine vide si le profil ne porte ni l'un ni
- * l'autre : les comptes crees avant l'ajout de la ville n'en ont pas, et mieux
- * vaut masquer la ligne que d'afficher un lieu a moitie vide.
+ * Nombre d'objets de la section « Derniers objets ajoutes » : 10 en liste
+ * sur mobile, 12 sur grand ecran pour remplir quatre rangees de trois.
  */
-function libelleLieu({ codePostal, ville }) {
-  return [codePostal, ville].filter(Boolean).join(" ");
-}
-
-/** Onglets de la barre du bas. Seul l'accueil existe a ce stade du POC. */
-const ONGLETS = [
-  { cle: "accueil", libelle: "Accueil", Icone: Home },
-  { cle: "recherche", libelle: "Recherche", Icone: Search },
-  { cle: "creer", libelle: "Créer", Icone: Plus, central: true },
-  { cle: "favoris", libelle: "Favoris", Icone: Heart },
-  { cle: "profil", libelle: "Profil", Icone: User },
-];
+const NOMBRE_DERNIERS = 10;
+const NOMBRE_DERNIERS_GRILLE = 12;
 
 /**
- * Ecran 4 des maquettes, adapte au perimetre reellement livre.
+ * Accueil (US-4, issue #32) : la barre de recherche, les puces de categories,
+ * l'accroche, puis les derniers objets ajoutes.
  *
- * L'annuaire des inscrits n'est pas du decor : la J2 demande « l'inscription
- * pas a pas ET l'affichage des utilisateurs ». C'est la preuve visible que le
- * profil a bien ete ecrit dans Firestore par le Worker.
- *
- * Ni barre de recherche ni filtres par categorie, contrairement aux maquettes :
- * l'US-3 (issue #9) les exclut du MVP, et une commande qui ne commande rien
- * dessert plus la demonstration qu'elle ne la sert. Les onglets absents du
- * perimetre restent visibles mais desactives, pour montrer la suite du produit
- * sans faire croire qu'elle fonctionne.
+ * La barre de recherche ouvre l'ecran Recherche, elle ne filtre pas l'accueil ;
+ * les puces, elles, filtrent la liste sur place. Pas de cloche de
+ * notifications : les notifications sont hors perimetre (WON'T).
  */
-export default function Accueil({ profil }) {
-  const [utilisateurs, setUtilisateurs] = useState(null);
+export default function Accueil() {
+  const [categories, setCategories] = useState([]);
+  const [categorieId, setCategorieId] = useState("");
+  const grandEcran = useGrandEcran();
+  const [annonces, setAnnonces] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(null);
+  const titreListe = useRef(null);
 
   useEffect(() => {
-    listerUtilisateurs()
-      .then(setUtilisateurs)
-      .catch((e) => setErreur(e.message));
+    // Sans categories, on garde la puce « Tout » : la liste reste utilisable.
+    chargerCategories().then(setCategories).catch(() => {});
   }, []);
 
-  // CA3 : connecte, on figure forcement dans l'annuaire — la liste n'est donc
-  // jamais vide. Le cas limite reel est « je suis le seul inscrit », et il
-  // merite d'etre dit plutot que de laisser une carte isolee sans explication.
-  const seulInscrit =
-    utilisateurs?.length === 1 && utilisateurs[0].id === profil.id;
+  const [tentative, setTentative] = useState(0);
+  const reessayer = useCallback(() => setTentative((n) => n + 1), []);
+
+  useEffect(() => {
+    // Deux puces touchees vite : seule la reponse de la derniere compte, meme
+    // si celle de la premiere arrive apres.
+    //
+    // Pendant le chargement, la liste precedente reste affichee, attenuee :
+    // la remplacer par des squelettes changerait la hauteur de la page et
+    // ferait sauter l'ecran.
+    let derniere = true;
+    setErreur(null);
+    setChargement(true);
+    chercherAnnonces({ tri: "recent", parPage: grandEcran ? NOMBRE_DERNIERS_GRILLE : NOMBRE_DERNIERS, categorieId })
+      .then((page) => {
+        if (!derniere) return;
+        setAnnonces(page.annonces);
+        if (!categorieId) setTotal(page.total);
+        // Si on avait defile plus bas, on remonte au debut de la nouvelle liste.
+        const titre = titreListe.current;
+        if (titre && titre.getBoundingClientRect().top < 0) titre.scrollIntoView({ block: "start" });
+      })
+      .catch((e) => derniere && setErreur(e.message))
+      .finally(() => derniere && setChargement(false));
+    return () => {
+      derniere = false;
+    };
+  }, [categorieId, tentative, grandEcran]);
+
+  const puces = [{ id: "", libelle: "Tout" }, ...categories];
 
   return (
-    <section className="pb-28">
-      <header className="flex items-center justify-between gap-4">
-        <Logo />
-        <Button
-          variant="ghost"
-          size="icon-lg"
-          className="rounded-2xl border border-primary/15 bg-white text-muted-foreground hover:text-foreground"
-          aria-label="Se déconnecter"
-          onClick={seDeconnecter}>
-          <LogOut className="size-4.5" aria-hidden="true" />
-        </Button>
-      </header>
+    // Grand ecran : bandeau, titre, categories, grille, puis « Comment ca
+    // marche ». Les classes lg:order-* reordonnent sans dupliquer le contenu.
+    <section className="flex flex-col">
+      <h1 className="sr-only lg:hidden">Accueil</h1>
+      <div className="lg:order-1">
+        <BandeauAccueil total={total} />
+      </div>
 
-      <h1 className="doneo-titre mt-6 text-[2rem] leading-tight">
-        Bonjour, {profil.prenom}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {libelleRoles(profil.roles)}
-        {libelleLieu(profil) && ` · ${libelleLieu(profil)}`}
-      </p>
+      <EnTeteCollant className="lg:order-3">
+        <header className="flex items-center gap-3 lg:hidden">
+          <Link to="/" aria-label="Donéo — accueil">
+            <Marque className="size-10" />
+          </Link>
+          <Link
+            to="/recherche"
+            className="flex h-12 flex-1 items-center gap-2.5 rounded-2xl border border-primary/10 bg-white px-4 text-[0.95rem] text-muted-foreground shadow-[0_6px_18px_-12px_rgb(155_77_219/35%)]">
+            <Search className="size-5 text-ardoise" aria-hidden="true" />
+            Chercher une pépite…
+          </Link>
+        </header>
 
-      {/* Banniere de marque : le violet porte l'identite, l'illustration
-          apporte la chaleur du geste. */}
-      <div className="mt-5 flex items-center gap-4 rounded-[1.75rem] bg-primary p-5 text-white shadow-lg shadow-primary/25">
+        {/* Puces de categories, defilement horizontal jusqu'aux bords. */}
+        <div
+          role="group"
+          aria-label="Filtrer par catégorie"
+          className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] lg:mx-0 lg:mt-0 lg:px-0">
+          {puces.map((c) => {
+            const active = c.id === categorieId;
+            return (
+              <button
+                key={c.id || "tout"}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setCategorieId(c.id)}
+                className={`h-10 shrink-0 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors ${
+                  active
+                    ? "bg-primary text-white shadow-md shadow-primary/30"
+                    : "border border-primary/10 bg-white text-ardoise"
+                }`}>
+                {c.libelle}
+              </button>
+            );
+          })}
+        </div>
+      </EnTeteCollant>
+
+      {/* Accroche. Elle ne promet pas que « la totalite » de la participation
+          va a l'association : la formulation reste a valider par l'UX. */}
+      <div className="mt-2 flex items-center gap-4 rounded-[1.75rem] lg:hidden bg-gradient-to-br from-primary to-[#b066e6] p-5 text-white shadow-lg shadow-primary/25">
         <div className="min-w-0 flex-1">
-          <p className="font-titre text-xl leading-tight font-semibold">
-            Donné, pas jeté.
-          </p>
-          <p className="mt-1.5 text-[0.8rem] leading-5 text-white/85 text-pretty">
-            Des objets utiles pour les étudiants, près de chez vous.
+          <p className="font-titre text-[1.45rem] leading-tight font-semibold">1 objet, 1 don.</p>
+          <p className="mt-1.5 text-[0.8rem] leading-5 text-white/90 text-pretty">
+            Votre participation soutient l’association choisie par l’offrant.
           </p>
         </div>
-        <div className="grid size-24 shrink-0 place-items-center rounded-[1.75rem] bg-white/95">
+        <div className="relative grid size-24 shrink-0 place-items-center rounded-[1.6rem] bg-white">
+          <img src="/illustrations/expression-heureux.svg" alt="" aria-hidden="true" className="size-14" />
           <img
-            src="/illustrations/objet-cadeau.svg"
+            src="/illustrations/objet-coeur.svg"
             alt=""
             aria-hidden="true"
-            className="size-16"
+            className="absolute -top-3 -right-2 size-9 rotate-12"
           />
         </div>
       </div>
 
-      <div className="mt-7 flex items-baseline justify-between gap-3">
-        <h2 className="doneo-titre text-xl">Membres de la communauté</h2>
-        {utilisateurs && (
-          <span className="text-violet-fonce text-sm font-semibold">
-            {utilisateurs.length}
-          </span>
+      {/* scroll-mt : le titre reste visible sous l'en-tete collant. */}
+      <div ref={titreListe} className="mt-7 flex scroll-mt-36 items-baseline justify-between gap-3 lg:order-2 lg:mt-14 lg:mb-4 lg:scroll-mt-28">
+        <h2 className="doneo-titre text-xl lg:text-3xl">Derniers objets ajoutés</h2>
+        <Link to="/recherche" className="text-sm font-semibold text-violet-fonce">
+          Tout voir
+        </Link>
+      </div>
+
+      <div className="mt-3 lg:order-4 lg:mt-2">
+        {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
+        {!erreur && !annonces && chargement && <ListeEnChargement />}
+        {!erreur && annonces?.length === 0 && (
+          <EtatVide
+            illustration="/illustrations/objet-cadeau.svg"
+            titre={categorieId ? "Rien dans cette catégorie" : "Aucun objet pour le moment"}
+            action={
+              <Button asChild variant="doneo" size="pilule" className="w-full">
+                <Link to="/creer">
+                  <Heart className="size-5 fill-current" aria-hidden="true" />
+                  Créer une annonce
+                </Link>
+              </Button>
+            }>
+            Soyez le premier à donner un objet : il trouvera vite preneur.
+          </EtatVide>
+        )}
+        {!erreur && annonces?.length > 0 && (
+          <ul
+            aria-busy={chargement}
+            className={`space-y-3 transition-opacity duration-200 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 lg:grid-cols-3 lg:gap-6 ${chargement ? "opacity-50" : ""}`}>
+            {annonces.map((a) => (
+              <li key={a.id}>
+                <CarteAnnonce annonce={a} grille />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
-      {erreur && (
-        <p
-          role="alert"
-          className="mt-3 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive">
-          {erreur}
-        </p>
-      )}
-
-      {!erreur && !utilisateurs && (
-        <p className="mt-3 text-sm text-muted-foreground">Chargement…</p>
-      )}
-
-      {/* CA3 : la communaute se resume a soi-meme. On le dit clairement, et on
-          affiche quand meme sa propre carte pour que le compteur et la liste
-          restent coherents. */}
-      {seulInscrit && (
-        <div className="doneo-carte mt-3 flex items-start gap-3 p-4">
-          <img
-            src="/illustrations/objet-etoile.svg"
-            alt=""
-            aria-hidden="true"
-            className="size-9 shrink-0"
-          />
-          <p className="text-[0.8rem] leading-5 text-muted-foreground text-pretty">
-            Vous êtes le premier inscrit ! Il n’y a pas encore d’autres membres
-            — revenez bientôt, ou parlez-en autour de vous.
-          </p>
-        </div>
-      )}
-
-      {utilisateurs && utilisateurs.length > 0 && (
-        <ul className="mt-3 space-y-2.5">
-          {utilisateurs.map((u) => (
-            <li key={u.id} className="doneo-carte flex items-center gap-3.5 p-3">
-              <span
-                className={`grid size-14 shrink-0 place-items-center rounded-2xl ${ton(u.prenom)} font-titre text-xl font-semibold text-ardoise`}
-                aria-hidden="true">
-                {(u.prenom?.[0] || "?").toUpperCase()}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">
-                  {u.prenom} {u.nom}
-                  {u.id === profil.id && (
-                    <span className="ml-2 align-middle text-[0.65rem] font-semibold tracking-wide text-primary uppercase">
-                      Vous
-                    </span>
-                  )}
-                </span>
-                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                  {libelleRoles(u.roles)}
-                </span>
-                {libelleLieu(u) && (
-                  <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="size-3 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{libelleLieu(u)}</span>
-                  </span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <nav
-        aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-md items-start justify-around rounded-t-[1.75rem] border-t border-primary/10 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)]">
-        {ONGLETS.map(({ cle, libelle, Icone, central }) => {
-          const actif = cle === "accueil";
-
-          if (central) {
-            return (
-              <button
-                key={cle}
-                type="button"
-                disabled
-                aria-label="Créer une annonce — bientôt disponible"
-                className="-mt-6 grid size-14 place-items-center rounded-3xl bg-primary text-white shadow-lg shadow-primary/40 disabled:opacity-45">
-                <Plus className="size-6" aria-hidden="true" />
-              </button>
-            );
-          }
-
-          return (
-            <button
-              key={cle}
-              type="button"
-              disabled={!actif}
-              aria-current={actif ? "page" : undefined}
-              aria-label={actif ? libelle : `${libelle} — bientôt disponible`}
-              className={`flex flex-1 flex-col items-center gap-1 disabled:opacity-40 ${
-                actif ? "text-primary" : "text-ardoise"
-              }`}>
-              <Icone
-                className="size-5.5"
-                strokeWidth={2}
-                fill={actif ? "currentColor" : "none"}
-                aria-hidden="true"
-              />
-              <span className="text-[0.625rem] font-semibold">{libelle}</span>
-            </button>
-          );
-        })}
-      </nav>
+      <div className="lg:order-5">
+        <CommentCaMarche />
+      </div>
     </section>
   );
 }

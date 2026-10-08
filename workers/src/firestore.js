@@ -58,6 +58,33 @@ export async function lireDocument(jeton, projectId, collection, id) {
   return depuisChamps(doc.fields);
 }
 
+/**
+ * Lit plusieurs documents d'une collection en un seul appel (batchGet).
+ * Renvoie une Map id -> document ; un identifiant absent n'y figure pas.
+ */
+export async function lireDocuments(jeton, projectId, collection, ids) {
+  const uniques = [...new Set(ids.filter(Boolean))];
+  if (uniques.length === 0) return new Map();
+
+  const base = `projects/${projectId}/databases/(default)/documents`;
+  const reponse = await fetch(`${RACINE}/${base}:batchGet`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${jeton}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ documents: uniques.map((id) => `${base}/${collection}/${id}`) }),
+  });
+  if (!reponse.ok) throw new Error(`Firestore ${reponse.status} : ${await reponse.text()}`);
+
+  const resultats = await reponse.json();
+  return new Map(
+    resultats
+      .filter((r) => r.found)
+      .map(({ found }) => {
+        const id = found.name.split('/').pop();
+        return [id, { id, ...depuisChamps(found.fields) }];
+      }),
+  );
+}
+
 /** Cree ou remplace un document. */
 export async function ecrireDocument(jeton, projectId, collection, id, donnees) {
   const reponse = await fetch(chemin(projectId, `${collection}/${id}`), {
@@ -69,15 +96,29 @@ export async function ecrireDocument(jeton, projectId, collection, id, donnees) 
   return depuisChamps((await reponse.json()).fields);
 }
 
-/** Liste une collection. `limite` borne la reponse. */
-export async function listerCollection(jeton, projectId, collection, limite = 50) {
-  const url = new URL(chemin(projectId, collection));
-  url.searchParams.set('pageSize', String(limite));
+/**
+ * Liste une collection, page apres page (Firestore en renvoie 300 au plus par
+ * appel). `limite` borne le total : les volumes du projet — quelques centaines
+ * de documents — tiennent largement en memoire, ce qui permet de filtrer et de
+ * trier dans le Worker sans index composite.
+ */
+export async function listerCollection(jeton, projectId, collection, limite = 1000) {
+  const documents = [];
+  let pageToken = '';
 
-  const reponse = await fetch(url, { headers: { authorization: `Bearer ${jeton}` } });
-  if (!reponse.ok) throw new Error(`Firestore ${reponse.status} : ${await reponse.text()}`);
+  do {
+    const url = new URL(chemin(projectId, collection));
+    url.searchParams.set('pageSize', String(Math.min(300, limite - documents.length)));
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
 
-  const { documents = [] } = await reponse.json();
+    const reponse = await fetch(url, { headers: { authorization: `Bearer ${jeton}` } });
+    if (!reponse.ok) throw new Error(`Firestore ${reponse.status} : ${await reponse.text()}`);
+
+    const page = await reponse.json();
+    documents.push(...(page.documents || []));
+    pageToken = page.nextPageToken || '';
+  } while (pageToken && documents.length < limite);
+
   return documents.map((doc) => ({
     id: doc.name.split('/').pop(),
     ...depuisChamps(doc.fields),

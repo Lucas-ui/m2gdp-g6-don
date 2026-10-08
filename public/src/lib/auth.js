@@ -10,6 +10,7 @@ import {
   isSignInWithEmailLink,
   onAuthStateChanged,
   sendSignInLinkToEmail,
+  signInWithCustomToken,
   signInWithEmailLink,
   signOut,
 } from 'firebase/auth';
@@ -18,6 +19,13 @@ import { firebaseConfig } from '@/lib/firebase.js';
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 auth.languageCode = 'fr';
+
+// En developpement seulement : connexion par jeton personnalise, pour que les
+// tests automatises entrent dans l'app sans ouvrir de boite mail. Le build de
+// production ne contient pas ce code (import.meta.env.DEV y vaut false).
+if (import.meta.env.DEV) {
+  window.__doneoTest = { connecter: (jeton) => signInWithCustomToken(auth, jeton) };
+}
 
 // Le lien magique s'ouvre potentiellement dans un autre onglet : Firebase a
 // besoin de retrouver l'adresse saisie au depart. On la garde ici en attendant.
