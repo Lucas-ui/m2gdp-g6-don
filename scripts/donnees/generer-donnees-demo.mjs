@@ -13,6 +13,7 @@
  * Le resultat est versionne : on relit des JSON dans une revue de code, et le
  * chargement en base (charger-donnees-demo.mjs) n'a plus besoin du reseau.
  */
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { CATALOGUE } from './catalogue-objets.mjs';
@@ -137,13 +138,22 @@ async function adresseValide() {
 }
 
 /**
- * Position approchee, publique : la position exacte decalee de 200 a 500 m dans
- * une direction tiree au hasard, une fois pour toutes. Assez pres pour situer
- * l'objet dans son quartier, assez loin pour ne pas designer un immeuble.
+ * Position approchee, publique : la position exacte decalee de 200 a 500 m.
+ * Assez pres pour situer l'objet dans son quartier, assez loin pour ne pas
+ * designer un immeuble.
+ *
+ * Le decalage est DERIVE DE L'ADRESSE (empreinte SHA-256), et non tire a
+ * chaque annonce : toutes les annonces d'une meme adresse partagent le meme
+ * point. Avec un tirage par annonce, les huit annonces d'un offrant
+ * formeraient un cercle autour de chez lui, et la moyenne de leurs positions
+ * retomberait sur son domicile.
  */
-function positionApprochee(latitude, longitude) {
-  const distance = 200 + hasard() * 300;
-  const angle = hasard() * 2 * Math.PI;
+function positionApprochee(latitude, longitude, adresse) {
+  const empreinte = createHash('sha256')
+    .update(`${adresse.numeroRue}|${adresse.rue}|${adresse.codePostal}`.toLowerCase())
+    .digest();
+  const distance = 200 + (empreinte.readUInt32BE(0) / 2 ** 32) * 300;
+  const angle = (empreinte.readUInt32BE(4) / 2 ** 32) * 2 * Math.PI;
   const arrondi = (x) => Math.round(x * 1e5) / 1e5;
   return {
     latitudeApprochee: arrondi(latitude + (distance * Math.cos(angle)) / 111320),
@@ -291,7 +301,7 @@ for (const [i, objet] of objets.entries()) {
     ville: lieu.ville,
     latitude: lieu.latitude,
     longitude: lieu.longitude,
-    ...positionApprochee(lieu.latitude, lieu.longitude),
+    ...positionApprochee(lieu.latitude, lieu.longitude, lieu),
     quartier: lieu.quartier,
     mediaIds: [],
     statut: tirageStatut < 0.86 ? 'disponible' : tirageStatut < 0.97 ? 'reserve' : 'remis',

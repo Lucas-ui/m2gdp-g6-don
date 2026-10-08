@@ -1536,7 +1536,7 @@ components:
           description: "📍 Arrondissement (« Lyon 7e ») ou commune"
         latitudeApprochee:
           type: number
-          description: "📍 Position exacte décalée de 200 à 500 m, tirée une fois — jamais la position exacte"
+          description: "📍 Position exacte décalée de 200 à 500 m, décalage dérivé de l'adresse (un seul point par adresse) — jamais la position exacte"
         longitudeApprochee: { type: number }
         distanceKm:
           type: number

@@ -524,15 +524,18 @@ exacte. D'où deux niveaux, calqués sur ceux de l'adresse :
 | Champ                                        | Source                                        | Visibilité                           |
 | -------------------------------------------- | --------------------------------------------- | ------------------------------------ |
 | `latitude`, `longitude`                      | Géocodage de l'adresse complète (Géoplateforme) | 🔒 **jamais exposées**             |
-| `latitudeApprochee`, `longitudeApprochee`    | Position exacte **décalée de 200 à 500 m**, dans une direction tirée une fois pour toutes | 🌍 publiques |
+| `latitudeApprochee`, `longitudeApprochee`    | Position exacte **décalée de 200 à 500 m**, décalage **dérivé de l'adresse** | 🌍 publiques |
 | `quartier`                                   | Arrondissement (« Lyon 7e ») ou commune, renvoyé par le géocodage | 🌍 public          |
 
 - **Décalage plutôt que centroïde IRIS** : la version précédente prévoyait le
   centre du quartier IRIS. Le décalage protège autant — il ne désigne pas un
-  immeuble, et il est tiré une seule fois, donc on ne peut pas le moyenner en
-  interrogeant plusieurs fois —, ne demande aucun fichier de contours, et
-  évite d'empiler toutes les annonces d'un quartier sur un même point de la
-  carte.
+  immeuble —, ne demande aucun fichier de contours, et évite d'empiler toutes
+  les annonces d'un quartier sur un même point de la carte.
+- **Un seul point public par adresse.** Le décalage (distance et direction) est
+  calculé à partir d'une empreinte SHA-256 de `numeroRue|rue|codePostal`, et
+  non tiré au hasard pour chaque annonce. Sinon, les annonces d'un même offrant
+  formeraient un cercle autour de chez lui, dont le centre trahirait son
+  domicile. La publication d'une annonce doit appliquer exactement ce calcul.
 - **Toute distance renvoyée est calculée sur la position approchée, puis
   arrondie à 0,5 km** — « à moins d'un kilomètre » en deçà. Une distance exacte,
   interrogée depuis trois points différents, suffit à trianguler un domicile.
