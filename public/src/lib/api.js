@@ -65,13 +65,17 @@ let categoriesEnCours = null;
 
 /** Arbre des categories (principales, avec leurs sous-categories). */
 export function chargerCategories() {
-  categoriesEnCours ??= appeler('/api/categories').then(({ ok, donnees }) => {
-    if (!ok) {
-      categoriesEnCours = null; // on retentera au prochain appel
-      throw new Error(donnees.erreur || 'Chargement des catégories impossible.');
-    }
-    return donnees.categories;
-  });
+  categoriesEnCours ??= appeler('/api/categories')
+    .then(({ ok, donnees }) => {
+      if (!ok) throw new Error(donnees.erreur || 'Chargement des catégories impossible.');
+      return donnees.categories;
+    })
+    .catch((erreur) => {
+      // Refus du serveur OU coupure reseau : on oublie l'echec, pour que le
+      // prochain ecran retente au lieu de recevoir le meme rejet toute la session.
+      categoriesEnCours = null;
+      throw erreur;
+    });
   return categoriesEnCours;
 }
 

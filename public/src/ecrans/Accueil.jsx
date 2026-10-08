@@ -29,15 +29,22 @@ export default function Accueil() {
     chargerCategories().then(setCategories).catch(() => {});
   }, []);
 
-  const charger = useCallback(() => {
+  const [tentative, setTentative] = useState(0);
+  const reessayer = useCallback(() => setTentative((n) => n + 1), []);
+
+  useEffect(() => {
+    // Deux puces touchees vite : seule la reponse de la derniere compte, meme
+    // si celle de la premiere arrive apres.
+    let derniere = true;
     setErreur(null);
     setAnnonces(null);
     chercherAnnonces({ tri: "recent", parPage: NOMBRE_DERNIERS, categorieId })
-      .then((page) => setAnnonces(page.annonces))
-      .catch((e) => setErreur(e.message));
-  }, [categorieId]);
-
-  useEffect(charger, [charger]);
+      .then((page) => derniere && setAnnonces(page.annonces))
+      .catch((e) => derniere && setErreur(e.message));
+    return () => {
+      derniere = false;
+    };
+  }, [categorieId, tentative]);
 
   const puces = [{ id: "", libelle: "Tout" }, ...categories];
 
@@ -107,7 +114,7 @@ export default function Accueil() {
       </div>
 
       <div className="mt-3">
-        {erreur && <ErreurChargement message={erreur} surReessayer={charger} />}
+        {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
         {!erreur && !annonces && <ListeEnChargement />}
         {annonces?.length === 0 && (
           <EtatVide

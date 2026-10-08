@@ -40,3 +40,4 @@ appels réseau, sans toucher aux données.
 | `e2e/filtres.spec.js` | US-14 — Filtres catégorie, état, participation (#42) |
 | `e2e/tri.spec.js` | US-15 — Tri par date, participation ou créneau (#43) |
 | `e2e/vue-carte.spec.js` | US-16 — Bascule liste / carte (#44) |
+| `e2e/regressions-revue.spec.js` | Non-régression des défauts relevés par la revue de code du J4 |

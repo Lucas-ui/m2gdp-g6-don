@@ -54,6 +54,9 @@ export default function Recherche() {
   const [page, setPage] = useState(1);
   const [suiteEnCours, setSuiteEnCours] = useState(false);
   const [erreur, setErreur] = useState(null);
+  // Echec de « Voir plus » : distinct de l'erreur de chargement, pour ne pas
+  // effacer les resultats deja affiches.
+  const [erreurSuite, setErreurSuite] = useState(null);
   const [categories, setCategories] = useState([]);
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
   const champ = useRef(null);
@@ -79,23 +82,44 @@ export default function Recherche() {
     [setParametres],
   );
 
+  // Dernier mot-cle que la saisie a ecrit dans l'URL. Il permet de distinguer
+  // nos propres mises a jour d'un changement venu d'ailleurs.
+  const qEcrit = useRef(q);
+
   // La saisie part dans l'URL apres une courte pause, sans recharger la page.
   useEffect(() => {
     if (saisie.trim() === q) return undefined;
-    const minuteur = setTimeout(() => modifierCriteres({ q: saisie.trim() }), DELAI_SAISIE);
+    const minuteur = setTimeout(() => {
+      qEcrit.current = saisie.trim();
+      modifierCriteres({ q: saisie.trim() });
+    }, DELAI_SAISIE);
     return () => clearTimeout(minuteur);
   }, [saisie, q, modifierCriteres]);
+
+  // Le mot-cle a change sans passer par la saisie — onglet « Recherche » du
+  // menu, retour arriere : le champ suit l'URL. Sans cela, la saisie restee a
+  // l'ancien mot le reecrirait dans l'URL a la pause suivante.
+  useEffect(() => {
+    if (q !== qEcrit.current) {
+      qEcrit.current = q;
+      setSaisie(q);
+    }
+  }, [q]);
 
   const criteres = useMemo(
     () => ({ q, ...filtres, tri, parPage: surCarte ? PAR_PAGE_CARTE : PAR_PAGE }),
     [q, filtres, tri, surCarte],
   );
+  // Criteres en vigueur, lus par « Voir plus » une fois sa reponse arrivee.
+  const criteresCourants = useRef(criteres);
+  criteresCourants.current = criteres;
 
   useEffect(() => {
     // Une frappe rapide lance plusieurs recherches : seule la derniere compte,
     // meme si une reponse plus ancienne arrive apres elle.
     let derniere = true;
     setErreur(null);
+    setErreurSuite(null);
     setResultat(null);
     setPage(1);
     chercherAnnonces({ ...criteres, page: 1 })
@@ -112,14 +136,19 @@ export default function Recherche() {
   const total = resultat?.total ?? 0;
 
   async function voirPlus() {
+    const demandes = criteres;
+    const suivante = page + 1;
     setSuiteEnCours(true);
+    setErreurSuite(null);
     try {
-      const suivante = page + 1;
-      const suite = await chercherAnnonces({ ...criteres, page: suivante });
-      setResultat((r) => ({ ...r, annonces: [...r.annonces, ...suite.annonces] }));
+      const suite = await chercherAnnonces({ ...demandes, page: suivante });
+      // Les criteres ont change pendant l'attente (tri, filtre, mot-cle) :
+      // cette page appartient a l'ancienne recherche, on l'ignore.
+      if (criteresCourants.current !== demandes) return;
+      setResultat((r) => (r ? { ...r, annonces: [...r.annonces, ...suite.annonces] } : r));
       setPage(suivante);
     } catch (e) {
-      setErreur(e.message);
+      if (criteresCourants.current === demandes) setErreurSuite(e.message);
     } finally {
       setSuiteEnCours(false);
     }
@@ -273,7 +302,7 @@ export default function Recherche() {
               </p>
             )}
             <Suspense fallback={<div className="-mx-5 h-[calc(100dvh-21rem)] min-h-72 animate-pulse bg-menthe/40" />}>
-              <CarteResultats annonces={annonces || []} />
+              <CarteResultats annonces={annonces} />
             </Suspense>
           </>
         )}
@@ -313,6 +342,11 @@ export default function Recherche() {
                 </li>
               ))}
             </ul>
+            {erreurSuite && (
+              <p role="alert" className="mt-4 text-center text-sm text-destructive">
+                La suite n’a pas pu être chargée. Vos résultats sont conservés : réessayez.
+              </p>
+            )}
             {annonces.length < total && (
               <Button
                 variant="doneoSecondaire"
@@ -321,7 +355,7 @@ export default function Recherche() {
                 onClick={voirPlus}
                 disabled={suiteEnCours}>
                 {suiteEnCours && <Loader2 className="size-5 animate-spin" aria-hidden="true" />}
-                Voir plus
+                {erreurSuite ? "Réessayer" : "Voir plus"}
               </Button>
             )}
           </>

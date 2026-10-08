@@ -6,7 +6,7 @@
  * plus simple que des index composites Firestore, et Firestore ne sait de
  * toute facon pas chercher du texte sans accents.
  */
-import { lireDocument, listerCollection } from './firestore.js';
+import { lireDocument, lireDocuments, listerCollection } from './firestore.js';
 import { associations, categoriesAPlat } from './referentiels.js';
 import { correspond } from './texte.js';
 
@@ -35,21 +35,23 @@ const TRIS = {
 /** Valeurs d'etat de l'objet (schema EtatObjet). */
 export const ETATS = ['neuf', 'tres_bon_etat', 'bon_etat', 'usage'];
 
-/** Tout ce qu'il faut pour presenter une annonce : referentiels et offrants. */
-export async function chargerContexte(jeton, projectId) {
-  const [annonces, categories, listeAssociations, utilisateurs] = await Promise.all([
-    listerCollection(jeton, projectId, 'annonces'),
+const parId = (liste) => new Map(liste.map((x) => [x.id, x]));
+
+/**
+ * Met des annonces sous forme publique : SEUL chemin vers la forme publique,
+ * pour la liste comme pour la fiche, afin qu'elles ne divergent jamais.
+ *
+ * Les referentiels viennent du cache ; les offrants sont lus un par un — en
+ * un seul appel —, et seulement ceux des annonces renvoyees.
+ */
+async function versAnnoncesPubliques(jeton, projectId, annonces) {
+  const [categories, listeAssociations, utilisateurs] = await Promise.all([
     categoriesAPlat(jeton, projectId),
     associations(jeton, projectId),
-    listerCollection(jeton, projectId, 'utilisateurs'),
+    lireDocuments(jeton, projectId, 'utilisateurs', annonces.map((a) => a.offrantId)),
   ]);
-  const parId = (liste) => new Map(liste.map((x) => [x.id, x]));
-  return {
-    annonces,
-    categories: parId(categories),
-    associations: parId(listeAssociations),
-    utilisateurs: parId(utilisateurs),
-  };
+  const contexte = { categories: parId(categories), associations: parId(listeAssociations), utilisateurs };
+  return annonces.map((a) => versAnnoncePublique(a, contexte));
 }
 
 /**
@@ -61,21 +63,8 @@ export async function chargerContexte(jeton, projectId) {
 export async function chargerAnnonce(jeton, projectId, id) {
   const annonce = await lireDocument(jeton, projectId, 'annonces', id);
   if (!annonce || annonce.statut === 'retiree') return null;
-
-  const [categories, listeAssociations, offrant] = await Promise.all([
-    categoriesAPlat(jeton, projectId),
-    associations(jeton, projectId),
-    lireDocument(jeton, projectId, 'utilisateurs', annonce.offrantId),
-  ]);
-  const parId = (liste) => new Map(liste.map((x) => [x.id, x]));
-  return versAnnoncePublique(
-    { id, ...annonce },
-    {
-      categories: parId(categories),
-      associations: parId(listeAssociations),
-      utilisateurs: new Map(offrant ? [[annonce.offrantId, { id: annonce.offrantId, ...offrant }]] : []),
-    },
-  );
+  const [publique] = await versAnnoncesPubliques(jeton, projectId, [{ id, ...annonce }]);
+  return publique;
 }
 
 /**
@@ -145,7 +134,7 @@ function entier(parametres, nom, defaut, min, max) {
  * GET /api/annonces : filtre, trie et pagine. Renvoie { erreurs } si un
  * parametre est invalide, sinon la page au format PageAnnonces.
  */
-export function rechercherAnnonces(contexte, parametres) {
+export async function rechercherAnnonces(jeton, projectId, parametres) {
   const erreurs = [];
   const page = entier(parametres, 'page', 1, 1, 10000);
   const parPage = entier(parametres, 'parPage', 20, 1, 50);
@@ -175,7 +164,10 @@ export function rechercherAnnonces(contexte, parametres) {
   }
   if (erreurs.length) return { erreurs };
 
-  const retenues = contexte.annonces
+  // Les filtres portent sur toute la collection, d'ou une lecture complete ;
+  // les offrants, eux, ne sont lus que pour la page renvoyee.
+  const toutes = await listerCollection(jeton, projectId, 'annonces');
+  const retenues = toutes
     .filter((a) => STATUTS_VISIBLES.includes(a.statut))
     .filter((a) => !categorieId || a.categorieId === categorieId)
     .filter((a) => !sousCategorieId || a.sousCategorieId === sousCategorieId)
@@ -191,8 +183,6 @@ export function rechercherAnnonces(contexte, parametres) {
     total: retenues.length,
     page: page.valeur,
     parPage: parPage.valeur,
-    annonces: retenues
-      .slice(debut, debut + parPage.valeur)
-      .map((a) => versAnnoncePublique(a, contexte)),
+    annonces: await versAnnoncesPubliques(jeton, projectId, retenues.slice(debut, debut + parPage.valeur)),
   };
 }
