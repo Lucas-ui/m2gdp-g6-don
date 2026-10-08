@@ -13,6 +13,7 @@ import Bientot from "@/ecrans/Bientot.jsx";
 import FicheAnnonce from "@/ecrans/FicheAnnonce.jsx";
 import LienInvalide from "@/ecrans/LienInvalide.jsx";
 import Profil from "@/ecrans/Profil.jsx";
+import Recherche from "@/ecrans/Recherche.jsx";
 import { chargerProfil } from "@/lib/api.js";
 import {
   estRetourDeLien,
@@ -180,14 +181,7 @@ export default function App() {
       <Routes>
         <Route element={<CoqueConnectee />}>
           <Route index element={<Accueil />} />
-          <Route
-            path="recherche"
-            element={
-              <Bientot titre="Recherche" illustration="/illustrations/objet-etoile.svg">
-                La recherche par mot-clé arrive avec la prochaine version.
-              </Bientot>
-            }
-          />
+          <Route path="recherche" element={<Recherche />} />
           <Route
             path="creer"
             element={
