@@ -9,11 +9,13 @@
  *   GET  /api/profil              profil de l'utilisateur connecte
  *   PUT  /api/profil              cree ou met a jour son profil
  *   GET  /api/utilisateurs        annuaire public des inscrits
+ *   GET  /api/categories          arbre des categories
  *   GET  /api/health              healthcheck
  */
 
 import { verifierJetonIdentite, jetonService } from './google.js';
 import { lireDocument, ecrireDocument, listerCollection } from './firestore.js';
+import { arbreCategories } from './referentiels.js';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/datastore',
@@ -266,6 +268,13 @@ export default {
           ville: ville || '',
         }));
         return json({ utilisateurs: publics, total: publics.length }, 200, cors);
+      }
+
+      /* --- Categories --------------------------------------------------- */
+      if (pathname === '/api/categories' && request.method === 'GET') {
+        const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
+        const categories = await arbreCategories(jeton, env.FIREBASE_PROJECT_ID);
+        return json({ categories }, 200, cors);
       }
 
       return json({ erreur: 'Route non trouvée', chemin: pathname }, 404, cors);

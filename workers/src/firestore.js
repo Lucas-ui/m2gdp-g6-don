@@ -69,15 +69,29 @@ export async function ecrireDocument(jeton, projectId, collection, id, donnees) 
   return depuisChamps((await reponse.json()).fields);
 }
 
-/** Liste une collection. `limite` borne la reponse. */
-export async function listerCollection(jeton, projectId, collection, limite = 50) {
-  const url = new URL(chemin(projectId, collection));
-  url.searchParams.set('pageSize', String(limite));
+/**
+ * Liste une collection, page apres page (Firestore en renvoie 300 au plus par
+ * appel). `limite` borne le total : les volumes du projet — quelques centaines
+ * de documents — tiennent largement en memoire, ce qui permet de filtrer et de
+ * trier dans le Worker sans index composite.
+ */
+export async function listerCollection(jeton, projectId, collection, limite = 1000) {
+  const documents = [];
+  let pageToken = '';
 
-  const reponse = await fetch(url, { headers: { authorization: `Bearer ${jeton}` } });
-  if (!reponse.ok) throw new Error(`Firestore ${reponse.status} : ${await reponse.text()}`);
+  do {
+    const url = new URL(chemin(projectId, collection));
+    url.searchParams.set('pageSize', String(Math.min(300, limite - documents.length)));
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
 
-  const { documents = [] } = await reponse.json();
+    const reponse = await fetch(url, { headers: { authorization: `Bearer ${jeton}` } });
+    if (!reponse.ok) throw new Error(`Firestore ${reponse.status} : ${await reponse.text()}`);
+
+    const page = await reponse.json();
+    documents.push(...(page.documents || []));
+    pageToken = page.nextPageToken || '';
+  } while (pageToken && documents.length < limite);
+
   return documents.map((doc) => ({
     id: doc.name.split('/').pop(),
     ...depuisChamps(doc.fields),
