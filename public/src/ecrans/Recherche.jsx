@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { ChevronDown, ListFilter, Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
@@ -8,7 +8,12 @@ import FeuilleFiltres, { FILTRES_VIDES } from "@/components/FeuilleFiltres.jsx";
 import { chargerCategories, chercherAnnonces } from "@/lib/api.js";
 import { LIBELLES_ETAT, formaterParticipation } from "@/lib/format.js";
 
+// La carte et Leaflet (~150 ko) ne se chargent qu'a la premiere ouverture.
+const CarteResultats = lazy(() => import("@/components/CarteResultats.jsx"));
+
 const PAR_PAGE = 20;
+/** Sur la carte, une seule page, la plus grande que l'API accepte. */
+const PAR_PAGE_CARTE = 50;
 /** Pause de frappe avant de lancer la recherche. */
 const DELAI_SAISIE = 300;
 const CLES_FILTRES = Object.keys(FILTRES_VIDES);
@@ -33,6 +38,7 @@ const pepites = (n) => `${n} ${n > 1 ? "pépites" : "pépite"}`;
 export default function Recherche() {
   const [parametres, setParametres] = useSearchParams();
   const q = parametres.get("q") || "";
+  const surCarte = parametres.get("vue") === "carte";
   const tri = TRIS.some((t) => t.valeur === parametres.get("tri")) ? parametres.get("tri") : "recent";
   const cleFiltres = CLES_FILTRES.map((c) => parametres.get(c) || "").join("|");
   const filtres = useMemo(
@@ -80,7 +86,10 @@ export default function Recherche() {
     return () => clearTimeout(minuteur);
   }, [saisie, q, modifierCriteres]);
 
-  const criteres = useMemo(() => ({ q, ...filtres, tri, parPage: PAR_PAGE }), [q, filtres, tri]);
+  const criteres = useMemo(
+    () => ({ q, ...filtres, tri, parPage: surCarte ? PAR_PAGE_CARTE : PAR_PAGE }),
+    [q, filtres, tri, surCarte],
+  );
 
   useEffect(() => {
     // Une frappe rapide lance plusieurs recherches : seule la derniere compte,
@@ -200,11 +209,27 @@ export default function Recherche() {
         </ul>
       )}
 
-      <div className="mt-5">
-        {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
-        {!erreur && !annonces && <ListeEnChargement />}
+      {/* Bascule Carte / Liste, d'apres les ecrans 05 et 06 de la maquette. */}
+      <div role="group" aria-label="Affichage" className="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-lavande p-1">
+        {[
+          { carte: true, libelle: "Carte" },
+          { carte: false, libelle: "Liste" },
+        ].map((v) => (
+          <button
+            key={v.libelle}
+            type="button"
+            aria-pressed={surCarte === v.carte}
+            onClick={() => modifierCriteres({ vue: v.carte ? "carte" : "" })}
+            className={`h-10 rounded-xl text-sm font-semibold transition-colors ${
+              surCarte === v.carte ? "bg-white text-ardoise shadow-sm" : "text-violet-fonce"
+            }`}>
+            {v.libelle}
+          </button>
+        ))}
+      </div>
 
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="mt-4">
+        <div className="mb-3 flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
           {annonces && !erreur ? (
             <p className="flex items-center gap-2 font-semibold text-ardoise" aria-live="polite">
               <img src="/illustrations/objet-etoile.svg" alt="" aria-hidden="true" className="size-7" />
@@ -213,28 +238,47 @@ export default function Recherche() {
           ) : (
             <span />
           )}
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            Trier
-            <span className="relative">
-              <select
-                value={tri}
-                onChange={(e) => modifierCriteres({ tri: e.target.value === "recent" ? "" : e.target.value })}
-                className="h-9 appearance-none rounded-full border border-primary/15 bg-white pr-8 pl-3.5 text-sm font-medium text-violet-fonce outline-none focus-visible:ring-4 focus-visible:ring-primary/15">
-                {TRIS.map((t) => (
-                  <option key={t.valeur} value={t.valeur}>
-                    {t.libelle}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-violet-fonce"
-                aria-hidden="true"
-              />
-            </span>
-          </label>
+          {/* Pas de tri sur la carte : l'ordre n'y a pas de sens. */}
+          {!surCarte && (
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              Trier
+              <span className="relative">
+                <select
+                  value={tri}
+                  onChange={(e) => modifierCriteres({ tri: e.target.value === "recent" ? "" : e.target.value })}
+                  className="h-9 appearance-none rounded-full border border-primary/15 bg-white pr-8 pl-3.5 text-sm font-medium text-violet-fonce outline-none focus-visible:ring-4 focus-visible:ring-primary/15">
+                  {TRIS.map((t) => (
+                    <option key={t.valeur} value={t.valeur}>
+                      {t.libelle}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-violet-fonce"
+                  aria-hidden="true"
+                />
+              </span>
+            </label>
+          )}
         </div>
 
-        {annonces?.length === 0 &&
+        {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
+        {!erreur && !annonces && !surCarte && <ListeEnChargement />}
+
+        {surCarte && !erreur && (
+          <>
+            {annonces && total > annonces.length && (
+              <p className="mb-2 text-sm text-muted-foreground">
+                La carte montre {annonces.length} pépites sur {total} : précisez la recherche pour voir les autres.
+              </p>
+            )}
+            <Suspense fallback={<div className="-mx-5 h-[calc(100dvh-21rem)] min-h-72 animate-pulse bg-menthe/40" />}>
+              <CarteResultats annonces={annonces || []} />
+            </Suspense>
+          </>
+        )}
+
+        {!surCarte && annonces?.length === 0 &&
           (actifs.length > 0 ? (
             <EtatVide
               illustration="/illustrations/objet-carton.svg"
@@ -260,7 +304,7 @@ export default function Recherche() {
             </EtatVide>
           ))}
 
-        {annonces?.length > 0 && (
+        {!surCarte && annonces?.length > 0 && (
           <>
             <ul className="space-y-3">
               {annonces.map((a) => (
