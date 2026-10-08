@@ -2,6 +2,11 @@ name = "doneo-api"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
+# Compte Cloudflare qui heberge le Worker (celui de Guillaume). Ce n'est pas un
+# secret : sans lui, un membre invite qui a plusieurs comptes se verrait
+# demander lequel utiliser, ou deploierait sur le mauvais.
+account_id = "af6e99118eacb7dae1f71bab594ad0ed"
+
 # CORS : restreindre l'acces au worker au domaine du front (voir agents.md).
 # Le code autorise en plus localhost, sinon le dev en local est impossible.
 [vars]
