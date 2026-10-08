@@ -1,0 +1,173 @@
+{
+  "description": "Référentiel des catégories Donéo : 12 catégories principales, 6 sous-catégories chacune. Chargé dans Firestore par scripts/donnees/charger-categories.mjs. `icone` est un nom d'icône Lucide, `teinte` une couleur de la charte : les deux servent aux illustrations par défaut.",
+  "categories": [
+    {
+      "id": "mobilier",
+      "libelle": "Mobilier",
+      "icone": "sofa",
+      "teinte": "lavande",
+      "sousCategories": [
+        { "id": "mobilier-tables-bureaux", "libelle": "Tables et bureaux", "icone": "table-2" },
+        { "id": "mobilier-chaises-tabourets", "libelle": "Chaises et tabourets", "icone": "armchair" },
+        { "id": "mobilier-rangements-etageres", "libelle": "Rangements et étagères", "icone": "library-big" },
+        { "id": "mobilier-lits-matelas", "libelle": "Lits et matelas", "icone": "bed-double" },
+        { "id": "mobilier-canapes-fauteuils", "libelle": "Canapés et fauteuils", "icone": "sofa" },
+        { "id": "mobilier-luminaires", "libelle": "Luminaires", "icone": "lamp-floor" }
+      ]
+    },
+    {
+      "id": "electromenager",
+      "libelle": "Électroménager",
+      "icone": "refrigerator",
+      "teinte": "menthe",
+      "sousCategories": [
+        { "id": "electromenager-froid", "libelle": "Réfrigérateurs et congélateurs", "icone": "refrigerator" },
+        { "id": "electromenager-lavage", "libelle": "Lave-linge et sèche-linge", "icone": "washing-machine" },
+        { "id": "electromenager-cuisson", "libelle": "Micro-ondes et fours", "icone": "microwave" },
+        { "id": "electromenager-petit-cuisine", "libelle": "Petit électroménager de cuisine", "icone": "blender" },
+        { "id": "electromenager-cafe", "libelle": "Cafetières et bouilloires", "icone": "coffee" },
+        { "id": "electromenager-chauffage", "libelle": "Chauffage et ventilation", "icone": "fan" }
+      ]
+    },
+    {
+      "id": "cuisine",
+      "libelle": "Cuisine et vaisselle",
+      "icone": "cooking-pot",
+      "teinte": "citron",
+      "sousCategories": [
+        { "id": "cuisine-casseroles-poeles", "libelle": "Casseroles et poêles", "icone": "cooking-pot" },
+        { "id": "cuisine-vaisselle", "libelle": "Assiettes et bols", "icone": "soup" },
+        { "id": "cuisine-verres-tasses", "libelle": "Verres et tasses", "icone": "glass-water" },
+        { "id": "cuisine-ustensiles", "libelle": "Ustensiles", "icone": "utensils-crossed" },
+        { "id": "cuisine-patisserie", "libelle": "Pâtisserie", "icone": "cookie" },
+        { "id": "cuisine-conservation", "libelle": "Boîtes et conservation", "icone": "package-open" }
+      ]
+    },
+    {
+      "id": "informatique",
+      "libelle": "Informatique et multimédia",
+      "icone": "laptop",
+      "teinte": "pervenche",
+      "sousCategories": [
+        { "id": "informatique-ordinateurs", "libelle": "Ordinateurs", "icone": "laptop" },
+        { "id": "informatique-ecrans", "libelle": "Écrans", "icone": "monitor" },
+        { "id": "informatique-claviers-souris", "libelle": "Claviers et souris", "icone": "keyboard" },
+        { "id": "informatique-telephones-tablettes", "libelle": "Téléphones et tablettes", "icone": "smartphone" },
+        { "id": "informatique-imprimantes", "libelle": "Imprimantes", "icone": "printer" },
+        { "id": "informatique-audio", "libelle": "Casques et enceintes", "icone": "headphones" }
+      ]
+    },
+    {
+      "id": "scolaire",
+      "libelle": "Matériel scolaire et étudiant",
+      "icone": "graduation-cap",
+      "teinte": "lavande",
+      "sousCategories": [
+        { "id": "scolaire-manuels", "libelle": "Manuels et livres de cours", "icone": "book-open" },
+        { "id": "scolaire-calculatrices", "libelle": "Calculatrices", "icone": "calculator" },
+        { "id": "scolaire-sacs", "libelle": "Sacs et cartables", "icone": "backpack" },
+        { "id": "scolaire-papeterie", "libelle": "Papeterie", "icone": "notebook-pen" },
+        { "id": "scolaire-dessin", "libelle": "Matériel de dessin", "icone": "palette" },
+        { "id": "scolaire-laboratoire", "libelle": "Blouses et matériel de TP", "icone": "flask-conical" }
+      ]
+    },
+    {
+      "id": "culture",
+      "libelle": "Livres, musique et jeux",
+      "icone": "book-heart",
+      "teinte": "citron",
+      "sousCategories": [
+        { "id": "culture-romans", "libelle": "Romans", "icone": "book" },
+        { "id": "culture-bd-mangas", "libelle": "BD et mangas", "icone": "book-heart" },
+        { "id": "culture-jeux-societe", "libelle": "Jeux de société", "icone": "dice-5" },
+        { "id": "culture-instruments", "libelle": "Instruments de musique", "icone": "guitar" },
+        { "id": "culture-cd-dvd-vinyles", "libelle": "CD, DVD et vinyles", "icone": "disc-3" },
+        { "id": "culture-jeux-video", "libelle": "Jeux vidéo et consoles", "icone": "gamepad-2" }
+      ]
+    },
+    {
+      "id": "vetements",
+      "libelle": "Vêtements et accessoires",
+      "icone": "shirt",
+      "teinte": "pervenche",
+      "sousCategories": [
+        { "id": "vetements-femme", "libelle": "Vêtements femme", "icone": "shirt" },
+        { "id": "vetements-homme", "libelle": "Vêtements homme", "icone": "shirt" },
+        { "id": "vetements-manteaux", "libelle": "Manteaux et vestes", "icone": "snowflake" },
+        { "id": "vetements-chaussures", "libelle": "Chaussures", "icone": "footprints" },
+        { "id": "vetements-sacs", "libelle": "Sacs et bagagerie", "icone": "handbag" },
+        { "id": "vetements-accessoires", "libelle": "Montres et accessoires", "icone": "watch" }
+      ]
+    },
+    {
+      "id": "enfance",
+      "libelle": "Enfance et puériculture",
+      "icone": "baby",
+      "teinte": "menthe",
+      "sousCategories": [
+        { "id": "enfance-poussettes", "libelle": "Poussettes", "icone": "baby" },
+        { "id": "enfance-sieges-auto", "libelle": "Sièges auto", "icone": "car-front" },
+        { "id": "enfance-lits-parcs", "libelle": "Lits et parcs", "icone": "bed-single" },
+        { "id": "enfance-jouets", "libelle": "Jouets", "icone": "toy-brick" },
+        { "id": "enfance-vetements", "libelle": "Vêtements enfant", "icone": "shirt" },
+        { "id": "enfance-eveil", "libelle": "Livres et jeux d'éveil", "icone": "puzzle" }
+      ]
+    },
+    {
+      "id": "sport",
+      "libelle": "Sport et loisirs",
+      "icone": "bike",
+      "teinte": "menthe",
+      "sousCategories": [
+        { "id": "sport-velos", "libelle": "Vélos", "icone": "bike" },
+        { "id": "sport-glisse", "libelle": "Trottinettes et rollers", "icone": "footprints" },
+        { "id": "sport-fitness", "libelle": "Fitness et musculation", "icone": "dumbbell" },
+        { "id": "sport-camping", "libelle": "Camping et randonnée", "icone": "tent" },
+        { "id": "sport-collectifs", "libelle": "Sports de ballon et de raquette", "icone": "volleyball" },
+        { "id": "sport-hiver", "libelle": "Sports d'hiver", "icone": "mountain-snow" }
+      ]
+    },
+    {
+      "id": "maison",
+      "libelle": "Maison et décoration",
+      "icone": "lamp",
+      "teinte": "lavande",
+      "sousCategories": [
+        { "id": "maison-linge", "libelle": "Linge de maison", "icone": "bed" },
+        { "id": "maison-rideaux-stores", "libelle": "Rideaux et stores", "icone": "blinds" },
+        { "id": "maison-cadres-miroirs", "libelle": "Cadres et miroirs", "icone": "frame" },
+        { "id": "maison-plantes", "libelle": "Plantes et pots", "icone": "sprout" },
+        { "id": "maison-lampes", "libelle": "Lampes d'appoint", "icone": "lamp-desk" },
+        { "id": "maison-salle-de-bain", "libelle": "Salle de bain", "icone": "bath" }
+      ]
+    },
+    {
+      "id": "bricolage",
+      "libelle": "Bricolage et jardin",
+      "icone": "hammer",
+      "teinte": "citron",
+      "sousCategories": [
+        { "id": "bricolage-outillage-main", "libelle": "Outillage à main", "icone": "hammer" },
+        { "id": "bricolage-outillage-electrique", "libelle": "Outillage électrique", "icone": "drill" },
+        { "id": "bricolage-quincaillerie", "libelle": "Quincaillerie", "icone": "nut" },
+        { "id": "bricolage-peinture", "libelle": "Peinture", "icone": "paint-roller" },
+        { "id": "bricolage-jardinage", "libelle": "Jardinage", "icone": "shovel" },
+        { "id": "bricolage-rangement", "libelle": "Caisses et rangement d'atelier", "icone": "toolbox" }
+      ]
+    },
+    {
+      "id": "animaux",
+      "libelle": "Animaux",
+      "icone": "paw-print",
+      "teinte": "pervenche",
+      "sousCategories": [
+        { "id": "animaux-chiens", "libelle": "Accessoires pour chiens", "icone": "dog" },
+        { "id": "animaux-chats", "libelle": "Accessoires pour chats", "icone": "cat" },
+        { "id": "animaux-rongeurs", "libelle": "Cages et rongeurs", "icone": "rabbit" },
+        { "id": "animaux-aquariums", "libelle": "Aquariums", "icone": "fish" },
+        { "id": "animaux-oiseaux", "libelle": "Oiseaux", "icone": "bird" },
+        { "id": "animaux-couchage", "libelle": "Paniers et couchages", "icone": "bone" }
+      ]
+    }
+  ]
+}
