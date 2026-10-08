@@ -10,12 +10,19 @@ le fichier `doneo-3561b-firebase-adminsdk-*.json` posé à la racine du dépôt
 
 | Script | Ce qu'il charge | Source |
 | --- | --- | --- |
-| `charger-categories.mjs` | Collection `categories` : 12 principales, 72 sous-catégories | [`specs/donnees/categories.json`](../../specs/donnees/categories.json) |
+| `generer-illustrations.mjs` | 84 illustrations SVG dans `public/static/illustrations/categories/`, une par catégorie et sous-catégorie. N'écrit pas dans Firestore | `categories.json` : icône Lucide et teinte de chaque catégorie |
+| `charger-categories.mjs` | Collection `categories` : 12 principales, 72 sous-catégories, avec leur `illustrationUrl` | [`specs/donnees/categories.json`](../../specs/donnees/categories.json) |
 
 ```bash
-node scripts/donnees/charger-categories.mjs --simulation
-node scripts/donnees/charger-categories.mjs
+cd scripts && npm install                 # une fois : installe lucide-static
+npm run illustrations                     # regenere les SVG
+node donnees/charger-categories.mjs --simulation
+node donnees/charger-categories.mjs
 ```
+
+Les illustrations reprennent le langage de la charte (`design/illustrations`) :
+trait ardoise épais, aplats pastel, et la teinte de la catégorie principale en
+fond, pour qu'une famille d'objets se reconnaisse dans une liste.
 
 Les scripts sont **rejouables** : les identifiants sont stables, relancer met à
 jour sans dupliquer.

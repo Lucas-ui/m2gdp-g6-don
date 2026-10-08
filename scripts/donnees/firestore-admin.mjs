@@ -10,9 +10,9 @@
 import { createSign } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { RACINE_DEPOT } from './chemins.mjs';
 
-export const RACINE_DEPOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+export { RACINE_DEPOT };
 
 function cheminCle() {
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) return process.env.GOOGLE_APPLICATION_CREDENTIALS;
