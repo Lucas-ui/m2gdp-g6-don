@@ -1,0 +1,13 @@
+{
+  "name": "doneo-tests",
+  "private": true,
+  "type": "module",
+  "description": "Tests E2E Playwright de Doneo, ecrits d'apres les criteres d'acceptation des US",
+  "scripts": {
+    "test": "playwright test",
+    "rapport": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}

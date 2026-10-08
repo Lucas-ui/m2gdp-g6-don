@@ -1268,6 +1268,10 @@ components:
       properties:
         id: { type: string }
         prenom: { type: string }
+        initialeNom:
+          type: string
+          description: "Initiale du nom suivie d'un point (« M. »), pour afficher « Claire M. »"
+          example: "M."
         photoUrl: { type: string, nullable: true }
         noteMoyenne:
           type: number

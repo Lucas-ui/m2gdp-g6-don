@@ -1,0 +1,64 @@
+import { Link } from "react-router";
+import { Heart } from "lucide-react";
+import ImageAnnonce from "@/components/ImageAnnonce.jsx";
+import { LIBELLES_ETAT, formaterParticipation, lieuAnnonce, nomOffrant } from "@/lib/format.js";
+
+/**
+ * Carte d'annonce, reutilisee par l'accueil, la recherche, les favoris et
+ * l'historique. Toute la carte mene a la fiche.
+ *
+ * Elle affiche ce dont le demandeur a besoin pour decider d'ouvrir la fiche :
+ * l'objet, qui le propose, la participation et l'association qui en profite,
+ * l'etat et le quartier — jamais l'adresse exacte, qui n'arrive d'ailleurs pas
+ * jusqu'au front.
+ */
+export default function CarteAnnonce({ annonce }) {
+  const reservee = annonce.statut === "reserve";
+
+  return (
+    <Link
+      to={`/annonces/${annonce.id}`}
+      className="doneo-carte flex gap-3.5 p-3 transition-transform focus-visible:ring-4 focus-visible:ring-primary/25 focus-visible:outline-none active:scale-[0.99]">
+      <ImageAnnonce
+        annonce={annonce}
+        className="size-28 shrink-0 rounded-2xl"
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Inter et non Fredoka : sur la maquette, le titre d'une carte est du
+            texte courant, pas un titre d'ecran. */}
+        <h3 className="line-clamp-2 font-sans text-[0.975rem] leading-snug font-semibold tracking-normal text-ardoise">
+          {annonce.titre}
+        </h3>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          Proposé par {nomOffrant(annonce.offrant)}
+        </p>
+
+        <p className="mt-1.5 flex items-baseline gap-1.5">
+          <span className="font-titre text-xl leading-none font-semibold text-primary">
+            {formaterParticipation(annonce.participation)}
+          </span>
+          <span className="text-xs text-muted-foreground">participation</span>
+        </p>
+
+        {annonce.association && (
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-ardoise">
+            <Heart className="size-3.5 shrink-0 fill-primary text-primary" aria-hidden="true" />
+            <span className="truncate">Reversé à {annonce.association.nom}</span>
+          </p>
+        )}
+
+        <p className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-xs text-muted-foreground">
+          <span>
+            {LIBELLES_ETAT[annonce.etat]} · {lieuAnnonce(annonce)}
+          </span>
+          {reservee && (
+            <span className="rounded-full bg-citron px-2 py-0.5 text-[0.6875rem] font-semibold text-ardoise">
+              Liste d’attente ouverte
+            </span>
+          )}
+        </p>
+      </div>
+    </Link>
+  );
+}

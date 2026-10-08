@@ -121,6 +121,23 @@ npm run dev      # serveur de dev, rechargement à chaud
 npm run build    # produit public/dist
 ```
 
+### Développer avec le Worker en local
+
+Pour tester une route du Worker avant qu'elle soit déployée :
+
+1. Créer `workers/.dev.vars` (git-ignoré) avec les deux secrets du Worker, la
+   clé de service sur une seule ligne et entre apostrophes :
+   ```
+   FIREBASE_SERVICE_ACCOUNT='{"type":"service_account",...}'
+   FIREBASE_API_KEY='AIza...'
+   ```
+2. Lancer le Worker : `cd workers && npx wrangler dev --port 8787`.
+3. Créer `public/.env.development.local` (git-ignoré) :
+   `VITE_API_BASE=http://localhost:8787`, puis relancer `npm run dev`.
+
+Sans ce fichier, le front local appelle le Worker **en ligne**. Le Worker local
+lit et écrit la **vraie** base Firestore.
+
 Particularités liées au fait que l'app vit dans `public/`, pour respecter la
 convention du cours (`/public` = App Frontend) :
 
