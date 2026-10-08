@@ -201,7 +201,7 @@ paths:
   /api/associations:
     get:
       tags: ["Référentiels"]
-      summary: "❤️ Lister les associations demandeurs"
+      summary: "❤️ Lister les associations bénéficiaires"
       description: >
         Liste alimentée depuis le Répertoire national des associations, filtrée
         sur la Métropole de Lyon.
@@ -426,8 +426,8 @@ paths:
       summary: "📄 Consulter une annonce"
       description: >
         Fiche publique. L'adresse exacte n'y figure jamais, pour personne : le
-        demandeur d'une réservation confirmée la lit sur la réservation, le
-        offrant sur `GET /api/annonces/{id}/edition`. Le schéma public reste
+        demandeur d'une réservation confirmée la lit sur la réservation,
+        l'offrant sur `GET /api/annonces/{id}/edition`. Le schéma public reste
         ainsi une liste blanche, sans champ privé à masquer selon l'appelant.
       security: [{}, { jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -772,8 +772,8 @@ paths:
       tags: ["Conversations"]
       summary: "✉️ Contacter l'offrant"
       description: >
-        Crée ou retrouve la conversation entre le demandeur connecté et le
-        offrant de l'annonce — elle est unique par couple (annonce,
+        Crée ou retrouve la conversation entre le demandeur connecté et
+        l'offrant de l'annonce — elle est unique par couple (annonce,
         demandeur). Le premier message est facultatif à la création.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -991,8 +991,8 @@ paths:
         "404": { $ref: "#/components/responses/Introuvable" }
         "409":
           description: >
-            La réservation n'est pas `proposee` — par exemple parce que le
-            offrant est passé au suivant faute de réponse.
+            La réservation n'est pas `proposee` — par exemple parce que
+            l'offrant est passé au suivant faute de réponse.
 
   /api/reservations/{id}/refus:
     post:
@@ -1095,8 +1095,8 @@ paths:
       tags: ["Avis"]
       summary: "⭐ Laisser un avis sur l'autre partie"
       description: >
-        Uniquement sur une réservation `remise`. Le demandeur note le
-        offrant, l'offrant peut noter le demandeur : un avis au plus par
+        Uniquement sur une réservation `remise`. Le demandeur note
+        l'offrant, l'offrant peut noter le demandeur : un avis au plus par
         partie et par réservation.
       security: [{ jetonFirebase: [] }]
       parameters: [{ $ref: "#/components/parameters/Id" }]
