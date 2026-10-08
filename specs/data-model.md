@@ -523,15 +523,21 @@ exacte. D'où deux niveaux, calqués sur ceux de l'adresse :
 
 | Champ                                        | Source                                        | Visibilité                           |
 | -------------------------------------------- | --------------------------------------------- | ------------------------------------ |
-| `latitude`, `longitude`                      | Géocodage de l'adresse complète (API Adresse) | 🔒 **jamais exposées**               |
-| `latitudeApprochee`, `longitudeApprochee`    | Centroïde du **quartier IRIS**                | 🌍 publiques                         |
-| `quartier`                                   | Libellé IRIS de la Métropole de Lyon          | 🌍 public                            |
+| `latitude`, `longitude`                      | Géocodage de l'adresse complète (Géoplateforme) | 🔒 **jamais exposées**             |
+| `latitudeApprochee`, `longitudeApprochee`    | Position exacte **décalée de 200 à 500 m**, dans une direction tirée une fois pour toutes | 🌍 publiques |
+| `quartier`                                   | Arrondissement (« Lyon 7e ») ou commune, renvoyé par le géocodage | 🌍 public          |
 
+- **Décalage plutôt que centroïde IRIS** : la version précédente prévoyait le
+  centre du quartier IRIS. Le décalage protège autant — il ne désigne pas un
+  immeuble, et il est tiré une seule fois, donc on ne peut pas le moyenner en
+  interrogeant plusieurs fois —, ne demande aucun fichier de contours, et
+  évite d'empiler toutes les annonces d'un quartier sur un même point de la
+  carte.
 - **Toute distance renvoyée est calculée sur la position approchée, puis
   arrondie à 0,5 km** — « à moins d'un kilomètre » en deçà. Une distance exacte,
   interrogée depuis trois points différents, suffit à trianguler un domicile.
-- Hors de la Métropole de Lyon, où les contours IRIS ne sont pas fournis, la
-  position approchée retombe sur le **centroïde du code postal**.
+- Le géocodage passe par la **Géoplateforme** (`data.geopf.fr/geocodage`), qui
+  a pris la suite de l'API Adresse, avec les mêmes paramètres et réponses.
 - La position de celui qui cherche n'est **jamais stockée** : le front la passe
   en paramètre, ou on part du centroïde de son code postal.
 

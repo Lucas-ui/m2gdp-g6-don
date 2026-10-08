@@ -25,6 +25,24 @@ export function categoriesAPlat(jeton, projectId) {
   return enCache('categories', () => listerCollection(jeton, projectId, 'categories'));
 }
 
+/** Associations, telles que stockees. */
+export function associations(jeton, projectId) {
+  return enCache('associations', () => listerCollection(jeton, projectId, 'associations'));
+}
+
+/** Champs publics d'une association : liste blanche. */
+export const versAssociation = ({ id, nom, description, thematique, numeroRna, codePostal, ville, siteWeb, logoUrl }) => ({
+  id,
+  nom,
+  ...(description ? { description } : {}),
+  ...(thematique ? { thematique } : {}),
+  ...(numeroRna ? { numeroRna } : {}),
+  ...(codePostal ? { codePostal } : {}),
+  ...(ville ? { ville } : {}),
+  ...(siteWeb ? { siteWeb } : {}),
+  ...(logoUrl ? { logoUrl } : {}),
+});
+
 /** Champs publics d'une categorie : liste blanche, comme partout ailleurs. */
 const versCategorie = ({ id, libelle, parentId, illustrationUrl, ordre }) => ({
   id,
