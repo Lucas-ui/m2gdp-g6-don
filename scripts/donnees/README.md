@@ -20,6 +20,29 @@ node donnees/charger-categories.mjs --simulation
 node donnees/charger-categories.mjs
 ```
 
+### Données de démonstration
+
+| Script | Ce qu'il fait |
+| --- | --- |
+| `generer-donnees-demo.mjs` | Produit `specs/donnees/demo/utilisateurs.json` (110 profils) et `annonces.json` (149 annonces, une par objet de `catalogue-objets.mjs`). Déterministe : graine fixe. Chaque adresse est validée par le géocodage de la Géoplateforme |
+| `charger-donnees-demo.mjs` | Charge les associations (`specs/donnees/associations.json`), les profils et les annonces. `--supprimer` retire uniquement la démo |
+
+```bash
+node donnees/generer-donnees-demo.mjs        # seulement pour regenerer les JSON
+node donnees/charger-donnees-demo.mjs --simulation
+node donnees/charger-donnees-demo.mjs
+node donnees/charger-donnees-demo.mjs --supprimer
+```
+
+Les profils et annonces de démo ont un identifiant en `demo-` et portent
+`fictif: true`. Les e-mails sont en `@example.org`, un domaine réservé qui ne
+reçoit jamais de message. Ces comptes n'existent pas dans Firebase Auth : ils
+apparaissent dans l'annuaire et comme offrants, mais personne ne peut s'y
+connecter.
+
+Les **associations sont réelles** (nom, RNA, siège : annuaire des entreprises),
+les présentations sont des résumés rédigés pour la démo.
+
 Les illustrations reprennent le langage de la charte (`design/illustrations`) :
 trait ardoise épais, aplats pastel, et la teinte de la catégorie principale en
 fond, pour qu'une famille d'objets se reconnaisse dans une liste.

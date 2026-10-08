@@ -401,8 +401,8 @@ paths:
       description: >
         L'offrant est repris du jeton vérifié, pas du corps : `offrantId` ne
         se déclare pas soi-même. À la publication, le Worker géocode l'adresse
-        complète — coordonnées exactes, privées — et en déduit le quartier IRIS
-        et la position approchée, publics.
+        complète — coordonnées exactes, privées — et en déduit le quartier
+        et la position approchée — décalée de 200 à 500 m —, publics.
       security: [{ jetonFirebase: [] }]
       requestBody:
         required: true
@@ -1529,10 +1529,10 @@ components:
         quartier:
           type: string
           nullable: true
-          description: "📍 Libellé IRIS ; `null` hors Métropole de Lyon"
+          description: "📍 Arrondissement (« Lyon 7e ») ou commune"
         latitudeApprochee:
           type: number
-          description: "📍 Centroïde du quartier IRIS, ou du code postal — jamais la position exacte"
+          description: "📍 Position exacte décalée de 200 à 500 m, tirée une fois — jamais la position exacte"
         longitudeApprochee: { type: number }
         distanceKm:
           type: number
@@ -1626,7 +1626,7 @@ components:
         quartier:
           type: string
           nullable: true
-          description: "Libellé IRIS — Métropole de Lyon"
+          description: "Arrondissement ou commune"
         meteoCreneau:
           type: object
           nullable: true
