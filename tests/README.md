@@ -41,3 +41,4 @@ appels réseau, sans toucher aux données.
 | `e2e/tri.spec.js` | US-15 — Tri par date, participation ou créneau (#43) |
 | `e2e/vue-carte.spec.js` | US-16 — Bascule liste / carte (#44) |
 | `e2e/regressions-revue.spec.js` | Non-régression des défauts relevés par la revue de code du J4 |
+| `e2e/ergonomie-mobile.spec.js` | En-têtes collants, pas de saut au changement de tri, retour toujours accessible |

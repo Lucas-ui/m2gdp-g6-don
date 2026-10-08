@@ -1,9 +1,10 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ChevronDown, ListFilter, Loader2, Search, X } from "lucide-react";
+import { ListFilter, Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
 import CarteAnnonce from "@/components/CarteAnnonce.jsx";
 import { EtatVide, ErreurChargement, ListeEnChargement } from "@/components/Etats.jsx";
+import EnTeteCollant from "@/components/EnTeteCollant.jsx";
 import FeuilleFiltres, { FILTRES_VIDES } from "@/components/FeuilleFiltres.jsx";
 import { chargerCategories, chercherAnnonces } from "@/lib/api.js";
 import { LIBELLES_ETAT, formaterParticipation } from "@/lib/format.js";
@@ -20,9 +21,9 @@ const CLES_FILTRES = Object.keys(FILTRES_VIDES);
 
 /** Tris proposes (US-15, issue #43). */
 const TRIS = [
-  { valeur: "recent", libelle: "Plus récents" },
-  { valeur: "participation", libelle: "Participation la plus basse" },
-  { valeur: "creneau", libelle: "Créneau le plus proche" },
+  { valeur: "recent", libelle: "Récents", titre: "Les plus récents d’abord" },
+  { valeur: "participation", libelle: "Participation", titre: "La plus petite participation d’abord" },
+  { valeur: "creneau", libelle: "Créneau", titre: "Le créneau le plus proche d’abord" },
 ];
 
 /** « 1 pépite », « 12 pépites ». */
@@ -53,6 +54,7 @@ export default function Recherche() {
   const [tentative, setTentative] = useState(0);
   const [page, setPage] = useState(1);
   const [suiteEnCours, setSuiteEnCours] = useState(false);
+  const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(null);
   // Echec de « Voir plus » : distinct de l'erreur de chargement, pour ne pas
   // effacer les resultats deja affiches.
@@ -60,6 +62,8 @@ export default function Recherche() {
   const [categories, setCategories] = useState([]);
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
   const champ = useRef(null);
+  const repereCarte = useRef(null);
+  const [hautCarte, setHautCarte] = useState(null);
 
   useEffect(() => {
     chargerCategories().then(setCategories).catch(() => {});
@@ -117,14 +121,25 @@ export default function Recherche() {
   useEffect(() => {
     // Une frappe rapide lance plusieurs recherches : seule la derniere compte,
     // meme si une reponse plus ancienne arrive apres elle.
+    //
+    // Pendant le chargement, les resultats precedents restent affiches,
+    // attenues : les remplacer par des squelettes changerait la hauteur de la
+    // page et ferait sauter l'ecran a chaque tri ou filtre.
     let derniere = true;
     setErreur(null);
     setErreurSuite(null);
-    setResultat(null);
-    setPage(1);
+    setChargement(true);
     chercherAnnonces({ ...criteres, page: 1 })
-      .then((r) => derniere && setResultat({ q: criteres.q, annonces: r.annonces, total: r.total }))
-      .catch((e) => derniere && setErreur(e.message));
+      .then((r) => {
+        if (!derniere) return;
+        setResultat({ q: criteres.q, annonces: r.annonces, total: r.total });
+        setPage(1);
+        // Nouveaux criteres : on repart du haut de la liste, une seule fois,
+        // quand les nouveaux resultats sont la.
+        if (window.scrollY > 0) window.scrollTo({ top: 0 });
+      })
+      .catch((e) => derniere && setErreur(e.message))
+      .finally(() => derniere && setChargement(false));
     return () => {
       derniere = false;
     };
@@ -154,6 +169,29 @@ export default function Recherche() {
     }
   }
 
+  // Position de depart de la carte, mesuree : elle suit la hauteur de
+  // l'en-tete, qui grandit quand des filtres sont actifs.
+  useLayoutEffect(() => {
+    if (!surCarte) {
+      setHautCarte(null);
+      return undefined;
+    }
+    const mesurer = () => {
+      const repere = repereCarte.current;
+      if (repere) setHautCarte(Math.round(repere.getBoundingClientRect().top));
+    };
+    mesurer();
+    const observateur = new ResizeObserver(mesurer);
+    observateur.observe(document.body);
+    window.addEventListener("resize", mesurer);
+    window.addEventListener("scroll", mesurer, { passive: true });
+    return () => {
+      observateur.disconnect();
+      window.removeEventListener("resize", mesurer);
+      window.removeEventListener("scroll", mesurer);
+    };
+  }, [surCarte, erreur]);
+
   function effacer() {
     setSaisie("");
     champ.current?.focus();
@@ -177,189 +215,218 @@ export default function Recherche() {
     <section>
       <h1 className="sr-only">Recherche</h1>
 
-      <div className="flex gap-3">
-        <div role="search" className="relative flex-1">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ardoise"
-            aria-hidden="true"
-          />
-          <input
-            ref={champ}
-            type="search"
-            inputMode="search"
-            enterKeyHint="search"
-            aria-label="Rechercher un objet"
-            placeholder="Chercher une pépite…"
-            value={saisie}
-            onChange={(e) => setSaisie(e.target.value)}
-            maxLength={100}
-            className="h-13 w-full rounded-2xl border border-primary/10 bg-white pr-12 pl-12 text-base text-ardoise shadow-[0_6px_18px_-12px_rgb(155_77_219/35%)] outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
-          />
-          {saisie && (
-            <button
-              type="button"
-              onClick={effacer}
-              aria-label="Effacer la recherche"
-              className="absolute top-1/2 right-3 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-lavande text-violet-fonce">
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setFeuilleOuverte(true)}
-          aria-label={actifs.length ? `Filtres, ${actifs.length} actifs` : "Filtres"}
-          className="relative grid size-13 shrink-0 place-items-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/30">
-          <ListFilter className="size-5.5" aria-hidden="true" />
-          {actifs.length > 0 && (
-            <span
+      {/* Recherche, filtres et bascule restent en haut quand la liste defile. */}
+      <EnTeteCollant>
+        <div className="flex gap-3">
+          <div role="search" className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ardoise"
               aria-hidden="true"
-              className="absolute -top-1.5 -right-1.5 grid size-5.5 place-items-center rounded-full border-2 border-lilas bg-rose text-[0.6875rem] font-bold">
-              {actifs.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {actifs.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Filtres actifs">
-          {actifs.map((f) => (
-            <li key={f.cle}>
+            />
+            <input
+              ref={champ}
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              aria-label="Rechercher un objet"
+              placeholder="Chercher une pépite…"
+              value={saisie}
+              onChange={(e) => setSaisie(e.target.value)}
+              maxLength={100}
+              className="h-13 w-full rounded-2xl border border-primary/10 bg-white pr-12 pl-12 text-base text-ardoise shadow-[0_6px_18px_-12px_rgb(155_77_219/35%)] outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {saisie && (
               <button
                 type="button"
-                onClick={() => modifierCriteres(f.retirer)}
-                aria-label={`Retirer le filtre ${f.libelle}`}
-                className="flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-primary/40 bg-white pr-2.5 pl-3.5 text-sm font-medium text-violet-fonce">
-                {f.libelle}
-                <X className="size-3.5" aria-hidden="true" />
+                onClick={effacer}
+                aria-label="Effacer la recherche"
+                className="absolute top-1/2 right-3 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-lavande text-violet-fonce">
+                <X className="size-4" aria-hidden="true" />
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Bascule Carte / Liste, d'apres les ecrans 05 et 06 de la maquette. */}
-      <div role="group" aria-label="Affichage" className="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-lavande p-1">
-        {[
-          { carte: true, libelle: "Carte" },
-          { carte: false, libelle: "Liste" },
-        ].map((v) => (
+            )}
+          </div>
           <button
-            key={v.libelle}
             type="button"
-            aria-pressed={surCarte === v.carte}
-            onClick={() => modifierCriteres({ vue: v.carte ? "carte" : "" })}
-            className={`h-10 rounded-xl text-sm font-semibold transition-colors ${
-              surCarte === v.carte ? "bg-white text-ardoise shadow-sm" : "text-violet-fonce"
-            }`}>
-            {v.libelle}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4">
-        <div className="mb-3 flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          {annonces && !erreur ? (
-            <p className="flex items-center gap-2 font-semibold text-ardoise" aria-live="polite">
-              <img src="/illustrations/objet-etoile.svg" alt="" aria-hidden="true" className="size-7" />
-              {resultat.q ? `${pepites(total)} pour « ${resultat.q} »` : `${pepites(total)} à donner`}
-            </p>
-          ) : (
-            <span />
-          )}
-          {/* Pas de tri sur la carte : l'ordre n'y a pas de sens. */}
-          {!surCarte && (
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              Trier
-              <span className="relative">
-                <select
-                  value={tri}
-                  onChange={(e) => modifierCriteres({ tri: e.target.value === "recent" ? "" : e.target.value })}
-                  className="h-9 appearance-none rounded-full border border-primary/15 bg-white pr-8 pl-3.5 text-sm font-medium text-violet-fonce outline-none focus-visible:ring-4 focus-visible:ring-primary/15">
-                  {TRIS.map((t) => (
-                    <option key={t.valeur} value={t.valeur}>
-                      {t.libelle}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-violet-fonce"
-                  aria-hidden="true"
-                />
+            onClick={() => setFeuilleOuverte(true)}
+            aria-label={actifs.length ? `Filtres, ${actifs.length} actifs` : "Filtres"}
+            className="relative grid size-13 shrink-0 place-items-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/30">
+            <ListFilter className="size-5.5" aria-hidden="true" />
+            {actifs.length > 0 && (
+              <span
+                aria-hidden="true"
+                className="absolute -top-1.5 -right-1.5 grid size-5.5 place-items-center rounded-full border-2 border-lilas bg-rose text-[0.6875rem] font-bold">
+                {actifs.length}
               </span>
-            </label>
-          )}
+            )}
+          </button>
         </div>
 
-        {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
-        {!erreur && !annonces && !surCarte && <ListeEnChargement />}
-
-        {surCarte && !erreur && (
-          <>
-            {annonces && total > annonces.length && (
-              <p className="mb-2 text-sm text-muted-foreground">
-                La carte montre {annonces.length} pépites sur {total} : précisez la recherche pour voir les autres.
-              </p>
-            )}
-            <Suspense fallback={<div className="-mx-5 h-[calc(100dvh-21rem)] min-h-72 animate-pulse bg-menthe/40" />}>
-              <CarteResultats annonces={annonces} />
-            </Suspense>
-          </>
+        {actifs.length > 0 && (
+          <ul
+            className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none]"
+            aria-label="Filtres actifs">
+            {actifs.map((f) => (
+              <li key={f.cle} className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => modifierCriteres(f.retirer)}
+                  aria-label={`Retirer le filtre ${f.libelle}`}
+                  className="flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-primary/40 bg-white pr-2.5 pl-3.5 text-sm font-medium whitespace-nowrap text-violet-fonce">
+                  {f.libelle}
+                  <X className="size-3.5" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
 
-        {!surCarte && annonces?.length === 0 &&
-          (actifs.length > 0 ? (
-            <EtatVide
-              illustration="/illustrations/objet-carton.svg"
-              titre="Aucun objet avec ces filtres"
-              action={
-                <Button variant="doneoSecondaire" size="pilule" className="w-full" onClick={() => modifierCriteres(FILTRES_VIDES)}>
-                  Réinitialiser les filtres
-                </Button>
-              }>
-              Élargissez vos critères pour voir plus d’objets.
-            </EtatVide>
-          ) : (
-            <EtatVide
-              illustration="/illustrations/objet-carton.svg"
-              titre="Aucun objet ne correspond à votre recherche"
-              action={
-                <Button variant="doneoSecondaire" size="pilule" className="w-full" onClick={effacer}>
-                  <X className="size-5" aria-hidden="true" />
-                  Effacer la recherche
-                </Button>
-              }>
-              Essayez un autre mot, plus court ou plus général.
-            </EtatVide>
+        {/* Bascule Carte / Liste, d'apres les ecrans 05 et 06 de la maquette. */}
+        <div role="group" aria-label="Affichage" className="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-lavande p-1">
+          {[
+            { carte: true, libelle: "Carte" },
+            { carte: false, libelle: "Liste" },
+          ].map((v) => (
+            <button
+              key={v.libelle}
+              type="button"
+              aria-pressed={surCarte === v.carte}
+              onClick={() => modifierCriteres({ vue: v.carte ? "carte" : "" })}
+              className={`h-10 rounded-xl text-sm font-semibold transition-colors ${
+                surCarte === v.carte ? "bg-white text-ardoise shadow-sm" : "text-violet-fonce"
+              }`}>
+              {v.libelle}
+            </button>
           ))}
+        </div>
+      </EnTeteCollant>
 
-        {!surCarte && annonces?.length > 0 && (
-          <>
-            <ul className="space-y-3">
-              {annonces.map((a) => (
-                <li key={a.id}>
-                  <CarteAnnonce annonce={a} variante="recherche" />
-                </li>
-              ))}
-            </ul>
-            {erreurSuite && (
-              <p role="alert" className="mt-4 text-center text-sm text-destructive">
-                La suite n’a pas pu être chargée. Vos résultats sont conservés : réessayez.
-              </p>
-            )}
-            {annonces.length < total && (
-              <Button
-                variant="doneoSecondaire"
-                size="pilule"
-                className="mt-4 w-full"
-                onClick={voirPlus}
-                disabled={suiteEnCours}>
-                {suiteEnCours && <Loader2 className="size-5 animate-spin" aria-hidden="true" />}
-                {erreurSuite ? "Réessayer" : "Voir plus"}
-              </Button>
-            )}
-          </>
+      <div className="mt-2">
+        <p className="flex min-h-8 items-center gap-2 font-semibold text-ardoise" aria-live="polite">
+          <img src="/illustrations/objet-etoile.svg" alt="" aria-hidden="true" className="size-7" />
+          {resultat && !erreur
+            ? resultat.q
+              ? `${pepites(total)} pour « ${resultat.q} »`
+              : `${pepites(total)} à donner`
+            : "Recherche en cours…"}
+          {chargement && resultat && (
+            <Loader2 className="size-4 animate-spin text-primary" aria-label="Mise à jour en cours" />
+          )}
+        </p>
+
+        {/* Tri en puces, comme les categories : un toucher suffit, et rien ne
+            jure avec la charte. Pas de tri sur la carte, ou l'ordre n'a pas
+            de sens. */}
+        {!surCarte && (
+          <div
+            role="group"
+            aria-label="Trier"
+            className="-mx-5 mt-2 flex items-center gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+            <span className="shrink-0 text-sm text-muted-foreground">Trier</span>
+            {TRIS.map((t) => (
+              <button
+                key={t.valeur}
+                type="button"
+                aria-pressed={tri === t.valeur}
+                title={t.titre}
+                onClick={() => modifierCriteres({ tri: t.valeur === "recent" ? "" : t.valeur })}
+                className={`h-8 shrink-0 rounded-full px-3.5 text-[0.8125rem] font-medium whitespace-nowrap transition-colors ${
+                  tri === t.valeur
+                    ? "bg-ardoise text-white"
+                    : "border border-primary/15 bg-white text-ardoise"
+                }`}>
+                {t.libelle}
+              </button>
+            ))}
+          </div>
         )}
+
+        <div className="mt-3">
+          {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
+          {!erreur && !resultat && !surCarte && <ListeEnChargement />}
+
+          {/* La carte occupe tout l'espace jusqu'au menu du bas, et passe sous
+              ses coins arrondis : pas de bande vide entre les deux. Le repere
+              donne la hauteur ou elle commence. */}
+          {surCarte && !erreur && (
+            <>
+              <div ref={repereCarte} aria-hidden="true" />
+              {hautCarte !== null && (
+                <div
+                  className="fixed inset-x-0 z-10 mx-auto max-w-md"
+                  style={{ top: hautCarte, bottom: "calc(var(--hauteur-menu) - 1.75rem)" }}>
+                  <Suspense fallback={<div className="h-full animate-pulse bg-menthe/40" />}>
+                    <CarteResultats annonces={annonces} />
+                  </Suspense>
+                  {annonces && total > annonces.length && (
+                    <p className="pointer-events-none absolute top-3 left-3 z-[600] max-w-[70%] rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ardoise shadow-md">
+                      {annonces.length} pépites sur {total} : précisez la recherche
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {!surCarte && !erreur && annonces?.length === 0 &&
+            (actifs.length > 0 ? (
+              <EtatVide
+                illustration="/illustrations/objet-carton.svg"
+                titre="Aucun objet avec ces filtres"
+                action={
+                  <Button
+                    variant="doneoSecondaire"
+                    size="pilule"
+                    className="w-full"
+                    onClick={() => modifierCriteres(FILTRES_VIDES)}>
+                    Réinitialiser les filtres
+                  </Button>
+                }>
+                Élargissez vos critères pour voir plus d’objets.
+              </EtatVide>
+            ) : (
+              <EtatVide
+                illustration="/illustrations/objet-carton.svg"
+                titre="Aucun objet ne correspond à votre recherche"
+                action={
+                  <Button variant="doneoSecondaire" size="pilule" className="w-full" onClick={effacer}>
+                    <X className="size-5" aria-hidden="true" />
+                    Effacer la recherche
+                  </Button>
+                }>
+                Essayez un autre mot, plus court ou plus général.
+              </EtatVide>
+            ))}
+
+          {!surCarte && !erreur && annonces?.length > 0 && (
+            <>
+              <ul
+                aria-busy={chargement}
+                className={`space-y-3 transition-opacity duration-200 ${chargement ? "opacity-50" : ""}`}>
+                {annonces.map((a) => (
+                  <li key={a.id}>
+                    <CarteAnnonce annonce={a} variante="recherche" />
+                  </li>
+                ))}
+              </ul>
+              {erreurSuite && (
+                <p role="alert" className="mt-4 text-center text-sm text-destructive">
+                  La suite n’a pas pu être chargée. Vos résultats sont conservés : réessayez.
+                </p>
+              )}
+              {annonces.length < total && (
+                <Button
+                  variant="doneoSecondaire"
+                  size="pilule"
+                  className="mt-4 w-full"
+                  onClick={voirPlus}
+                  disabled={suiteEnCours || chargement}>
+                  {suiteEnCours && <Loader2 className="size-5 animate-spin" aria-hidden="true" />}
+                  {erreurSuite ? "Réessayer" : "Voir plus"}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <FeuilleFiltres

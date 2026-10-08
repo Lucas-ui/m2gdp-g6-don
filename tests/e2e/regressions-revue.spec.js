@@ -50,7 +50,7 @@ test('« Voir plus » puis changement de tri : ni plantage, ni mélange', async 
   await page.getByRole('button', { name: 'Voir plus' }).click();
 
   const triee = page.waitForResponse((r) => r.url().includes('tri=participation'));
-  await page.getByRole('combobox', { name: 'Trier' }).selectOption('participation');
+  await page.getByRole('group', { name: 'Trier' }).getByRole('button', { name: 'Participation', exact: true }).click();
   const { annonces } = await (await triee).json();
   await page.waitForTimeout(2000); // laisse arriver la page 2 de l'ancienne recherche
 

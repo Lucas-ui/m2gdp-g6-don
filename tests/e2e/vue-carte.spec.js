@@ -77,8 +77,11 @@ test('Affichage sur mobile', async ({ page }) => {
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche?vue=carte');
   await expect(epingles(page).first()).toBeVisible();
   await attendrePasDeDefilementHorizontal(page);
-  // La carte s'arrete au-dessus du menu du bas.
+  // La carte descend jusqu'au menu, et passe sous ses coins arrondis :
+  // aucune bande vide entre les deux.
   const carte = await page.getByRole('region', { name: 'Carte des objets' }).boundingBox();
   const menu = await page.getByRole('navigation', { name: 'Navigation principale' }).boundingBox();
-  expect(carte.y + carte.height).toBeLessThanOrEqual(menu.y + 1);
+  const basCarte = carte.y + carte.height;
+  expect(basCarte).toBeGreaterThanOrEqual(menu.y);
+  expect(basCarte).toBeLessThanOrEqual(menu.y + 30);
 });

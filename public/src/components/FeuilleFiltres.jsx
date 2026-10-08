@@ -81,7 +81,7 @@ export default function FeuilleFiltres({ ouverte, categories, filtres, surAppliq
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center">
       <button
         type="button"
         aria-label="Fermer les filtres"

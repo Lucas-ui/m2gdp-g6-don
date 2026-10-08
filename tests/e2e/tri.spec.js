@@ -5,7 +5,8 @@
 import { expect, test } from '@playwright/test';
 import { PROFILS, ouvrirConnecte } from './outils.js';
 
-const selecteur = (page) => page.getByRole('combobox', { name: 'Trier' });
+const puces = (page) => page.getByRole('group', { name: 'Trier' });
+const puce = (page, libelle) => puces(page).getByRole('button', { name: libelle, exact: true });
 
 /**
  * Choisit un tri et renvoie les annonces de LA reponse correspondante. On
@@ -14,7 +15,7 @@ const selecteur = (page) => page.getByRole('combobox', { name: 'Trier' });
  */
 async function trierPar(page, libelle, valeur) {
   const reponse = page.waitForResponse((r) => r.url().includes('/api/annonces?') && r.url().includes(`tri=${valeur}`));
-  await selecteur(page).selectOption({ label: libelle });
+  await puce(page, libelle).click();
   const r = await reponse;
   await expect(page.getByRole('main').getByRole('listitem').first()).toBeVisible();
   return { url: r.url(), annonces: (await r.json()).annonces };
@@ -23,7 +24,7 @@ async function trierPar(page, libelle, valeur) {
 test('Par défaut, les plus récentes d’abord', async ({ page }) => {
   const reponse = page.waitForResponse((r) => r.url().includes('/api/annonces?') && r.url().includes('parPage=20'));
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche');
-  await expect(selecteur(page)).toHaveValue('recent');
+  await expect(puce(page, 'Récents')).toHaveAttribute('aria-pressed', 'true');
   const { annonces } = await (await reponse).json();
   const dates = annonces.map((a) => a.creeLe);
   expect(dates.length).toBeGreaterThan(1);
@@ -32,7 +33,7 @@ test('Par défaut, les plus récentes d’abord', async ({ page }) => {
 
 test('Trier par participation, la plus basse d’abord', async ({ page }) => {
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche');
-  const { annonces } = await trierPar(page, 'Participation la plus basse', 'participation');
+  const { annonces } = await trierPar(page, 'Participation', 'participation');
   const montants = annonces.map((a) => a.participation);
   expect(montants).toEqual([...montants].sort((a, b) => a - b));
   await expect(page).toHaveURL(/tri=participation/);
@@ -40,7 +41,7 @@ test('Trier par participation, la plus basse d’abord', async ({ page }) => {
 
 test('Trier par créneau, le plus proche d’abord', async ({ page }) => {
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche');
-  const { annonces } = await trierPar(page, 'Créneau le plus proche', 'creneau');
+  const { annonces } = await trierPar(page, 'Créneau', 'creneau');
   const avenir = annonces.filter((a) => new Date(a.creneauRetrait.fin) > new Date());
   const debuts = avenir.map((a) => a.creneauRetrait.debut);
   expect(debuts).toEqual([...debuts].sort());
@@ -50,7 +51,7 @@ test('Trier par créneau, le plus proche d’abord', async ({ page }) => {
 
 test('Le tri se combine aux filtres et au mot-clé', async ({ page }) => {
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche?categorieId=mobilier&q=bois');
-  const { url, annonces } = await trierPar(page, 'Participation la plus basse', 'participation');
+  const { url, annonces } = await trierPar(page, 'Participation', 'participation');
   expect(url).toContain('categorieId=mobilier');
   expect(url).toContain('q=bois');
   for (const a of annonces) expect(a.categorie.id).toBe('mobilier');
@@ -58,8 +59,8 @@ test('Le tri se combine aux filtres et au mot-clé', async ({ page }) => {
 
 test('Le tri est conservé au retour d’une fiche', async ({ page }) => {
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche');
-  await trierPar(page, 'Créneau le plus proche', 'creneau');
+  await trierPar(page, 'Créneau', 'creneau');
   await page.getByRole('main').getByRole('listitem').getByRole('link').first().click();
   await page.getByRole('button', { name: 'Retour' }).click();
-  await expect(selecteur(page)).toHaveValue('creneau');
+  await expect(puce(page, 'Créneau')).toHaveAttribute('aria-pressed', 'true');
 });
