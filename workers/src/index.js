@@ -18,7 +18,7 @@
 
 import { verifierJetonIdentite, jetonService } from './google.js';
 import { lireDocument, ecrireDocument, listerCollection } from './firestore.js';
-import { chargerAnnonce, chargerContexte, rechercherAnnonces } from './annonces.js';
+import { chargerAnnonce, rechercherAnnonces } from './annonces.js';
 import { arbreCategories, associations, versAssociation } from './referentiels.js';
 import { correspond } from './texte.js';
 
@@ -302,8 +302,11 @@ export default {
       /* --- Annonces ------------------------------------------------------ */
       if (pathname === '/api/annonces' && request.method === 'GET') {
         const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
-        const contexte = await chargerContexte(jeton, env.FIREBASE_PROJECT_ID);
-        const resultat = rechercherAnnonces(contexte, new URL(request.url).searchParams);
+        const resultat = await rechercherAnnonces(
+          jeton,
+          env.FIREBASE_PROJECT_ID,
+          new URL(request.url).searchParams,
+        );
         if (resultat.erreurs) return json({ erreurs: resultat.erreurs }, 422, cors);
         return json(resultat, 200, cors);
       }
