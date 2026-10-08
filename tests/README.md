@@ -37,3 +37,4 @@ appels réseau, sans toucher aux données.
 | `e2e/illustration-par-defaut.spec.js` | US-12 — Illustration des annonces sans photo (#40) |
 | `e2e/fiche-annonce.spec.js` | US-9 — Fiche d’annonce, adresse jamais exposée (#37) |
 | `e2e/recherche.spec.js` | US-13 — Recherche par mot-clé en liste (#41) |
+| `e2e/filtres.spec.js` | US-14 — Filtres catégorie, état, participation (#42) |
