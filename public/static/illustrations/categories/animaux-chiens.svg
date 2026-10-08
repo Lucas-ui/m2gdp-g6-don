@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240" role="img" aria-label="Accessoires pour chiens">
+  <rect width="320" height="240" fill="#C6CAF6"/>
+  <circle cx="44" cy="206" r="58" fill="#A3A9EE" fill-opacity=".45"/>
+  <circle cx="292" cy="30" r="44" fill="#FFFFFF" fill-opacity=".35"/>
+  <circle cx="160" cy="120" r="78" fill="#FFFFFF" stroke="#2F4F5C" stroke-width="3"/>
+  <ellipse cx="160" cy="176" rx="40" ry="6" fill="#A3A9EE" fill-opacity=".7"/>
+  <g transform="translate(112 72) scale(4)" fill="none" stroke="#2F4F5C" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11.25 16.25h1.5L12 17z" />
+  <path d="M16 14v.5" />
+  <path d="M4.42 11.247A13.152 13.152 0 0 0 4 14.556C4 18.728 7.582 21 12 21s8-2.272 8-6.444a11.702 11.702 0 0 0-.493-3.309" />
+  <path d="M8 14v.5" />
+  <path d="M8.5 8.5c-.384 1.05-1.083 2.028-2.344 2.5-1.931.722-3.576-.297-3.656-1-.113-.994 1.177-6.53 4-7 1.923-.321 3.651.845 3.651 2.235A7.497 7.497 0 0 1 14 5.277c0-1.39 1.844-2.598 3.767-2.277 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.855-1.45-2.239-2.5" />
+  </g>
+  <path d="M226 64 216.5 54.5a6.4 6.4 0 0 1 9.05-9.05L226 46l.45-.55a6.4 6.4 0 0 1 9.05 9.05z" fill="#9B4DDB" stroke="#2F4F5C" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M84 53Q84 62 93 62Q84 62 84 71Q84 62 75 62Q84 62 84 53Z" fill="#2F4F5C"/>
+  <path d="M246 165Q246 172 253 172Q246 172 246 179Q246 172 239 172Q246 172 246 165Z" fill="#9B4DDB"/>
+  <circle cx="96" cy="182" r="4" fill="#E23C8E" fill-opacity=".55"/>
+  <circle cx="236" cy="96" r="3.4" fill="#2F4F5C"/>
+</svg>

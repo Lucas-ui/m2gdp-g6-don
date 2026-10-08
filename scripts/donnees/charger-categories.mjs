@@ -17,6 +17,11 @@ const { categories } = JSON.parse(
   readFileSync(path.join(RACINE_DEPOT, 'specs/donnees/categories.json'), 'utf8'),
 );
 
+// Illustrations generees par generer-illustrations.mjs et servies par le front
+// (public/static) : un chemin relatif suffit, l'app et ses images partagent
+// la meme origine.
+const illustration = (id) => `/illustrations/categories/${id}.svg`;
+
 const documents = [];
 categories.forEach((principale, i) => {
   documents.push({
@@ -26,7 +31,7 @@ categories.forEach((principale, i) => {
     ordre: i + 1,
     icone: principale.icone,
     teinte: principale.teinte,
-    illustrationUrl: principale.illustrationUrl,
+    illustrationUrl: illustration(principale.id),
   });
   principale.sousCategories.forEach((sous, j) => {
     documents.push({
@@ -38,7 +43,7 @@ categories.forEach((principale, i) => {
       // La teinte est celle de la principale : toute une famille d'objets
       // partage la meme couleur, ce qui aide a la reconnaitre dans une liste.
       teinte: principale.teinte,
-      illustrationUrl: sous.illustrationUrl,
+      illustrationUrl: illustration(sous.id),
     });
   });
 });

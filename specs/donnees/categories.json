@@ -7,7 +7,7 @@
       "icone": "sofa",
       "teinte": "lavande",
       "sousCategories": [
-        { "id": "mobilier-tables-bureaux", "libelle": "Tables et bureaux", "icone": "table-2" },
+        { "id": "mobilier-tables-bureaux", "libelle": "Tables et bureaux", "icone": "lamp-desk" },
         { "id": "mobilier-chaises-tabourets", "libelle": "Chaises et tabourets", "icone": "armchair" },
         { "id": "mobilier-rangements-etageres", "libelle": "Rangements et étagères", "icone": "library-big" },
         { "id": "mobilier-lits-matelas", "libelle": "Lits et matelas", "icone": "bed-double" },
@@ -135,9 +135,9 @@
       "sousCategories": [
         { "id": "maison-linge", "libelle": "Linge de maison", "icone": "bed" },
         { "id": "maison-rideaux-stores", "libelle": "Rideaux et stores", "icone": "blinds" },
-        { "id": "maison-cadres-miroirs", "libelle": "Cadres et miroirs", "icone": "frame" },
+        { "id": "maison-cadres-miroirs", "libelle": "Cadres et miroirs", "icone": "image" },
         { "id": "maison-plantes", "libelle": "Plantes et pots", "icone": "sprout" },
-        { "id": "maison-lampes", "libelle": "Lampes d'appoint", "icone": "lamp-desk" },
+        { "id": "maison-lampes", "libelle": "Lampes d'appoint", "icone": "lamp-ceiling" },
         { "id": "maison-salle-de-bain", "libelle": "Salle de bain", "icone": "bath" }
       ]
     },
@@ -149,7 +149,7 @@
       "sousCategories": [
         { "id": "bricolage-outillage-main", "libelle": "Outillage à main", "icone": "hammer" },
         { "id": "bricolage-outillage-electrique", "libelle": "Outillage électrique", "icone": "drill" },
-        { "id": "bricolage-quincaillerie", "libelle": "Quincaillerie", "icone": "nut" },
+        { "id": "bricolage-quincaillerie", "libelle": "Quincaillerie", "icone": "bolt" },
         { "id": "bricolage-peinture", "libelle": "Peinture", "icone": "paint-roller" },
         { "id": "bricolage-jardinage", "libelle": "Jardinage", "icone": "shovel" },
         { "id": "bricolage-rangement", "libelle": "Caisses et rangement d'atelier", "icone": "toolbox" }

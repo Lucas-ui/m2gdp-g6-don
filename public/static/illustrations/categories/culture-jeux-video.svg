@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240" role="img" aria-label="Jeux vidéo et consoles">
+  <rect width="320" height="240" fill="#EDF5B3"/>
+  <circle cx="44" cy="206" r="58" fill="#D9E77A" fill-opacity=".45"/>
+  <circle cx="292" cy="30" r="44" fill="#FFFFFF" fill-opacity=".35"/>
+  <circle cx="160" cy="120" r="78" fill="#FFFFFF" stroke="#2F4F5C" stroke-width="3"/>
+  <ellipse cx="160" cy="176" rx="40" ry="6" fill="#D9E77A" fill-opacity=".7"/>
+  <g transform="translate(112 72) scale(4)" fill="none" stroke="#2F4F5C" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="6" x2="10" y1="11" y2="11" />
+  <line x1="8" x2="8" y1="9" y2="13" />
+  <line x1="15" x2="15.01" y1="12" y2="12" />
+  <line x1="18" x2="18.01" y1="10" y2="10" />
+  <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
+  </g>
+  <path d="M226 64 216.5 54.5a6.4 6.4 0 0 1 9.05-9.05L226 46l.45-.55a6.4 6.4 0 0 1 9.05 9.05z" fill="#9B4DDB" stroke="#2F4F5C" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M84 53Q84 62 93 62Q84 62 84 71Q84 62 75 62Q84 62 84 53Z" fill="#2F4F5C"/>
+  <path d="M246 165Q246 172 253 172Q246 172 246 179Q246 172 239 172Q246 172 246 165Z" fill="#9B4DDB"/>
+  <circle cx="96" cy="182" r="4" fill="#E23C8E" fill-opacity=".55"/>
+  <circle cx="236" cy="96" r="3.4" fill="#2F4F5C"/>
+</svg>
