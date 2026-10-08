@@ -420,8 +420,8 @@ Les valeurs chiffrées sont des **propositions à valider** avec le PO.
   pour les créneaux trop courts. On laisse plutôt la main à l'offrant : il voit
   depuis quand l'objet est proposé (`proposeeLe`) et passe au suivant s'il
   n'a pas de nouvelles.
-- **On ne réserve pas une annonce dont le créneau est terminé** (409). Le
-  offrant le reporte en modifiant l'annonce, et le détenteur en est prévenu
+- **On ne réserve pas une annonce dont le créneau est terminé** (409).
+  L'offrant le reporte en modifiant l'annonce, et le détenteur en est prévenu
   par un message `creneau_modifie`.
 - **Le plafond de 3 compte aussi la liste d'attente.** Ne compter que les
   réservations proposées ou confirmées laisserait s'inscrire dans d'autres
@@ -667,8 +667,8 @@ la fait passer à `confirmee`.
    pour garder le développement simple.
 3. **Accord de l'offrant** : les maquettes clients montrent un offrant qui
    _confirme_ une demande. Le modèle retient « premier arrivé, premier servi »,
-   plus simple et plus équitable. Faut-il ajouter une validation par le
-   offrant ?
+   plus simple et plus équitable. Faut-il ajouter une validation par
+   l'offrant ?
 4. **Point de rencontre public** : le barème cite des options de _lieu_. Un
    retrait dans un lieu public — une station de métro, un parvis — éviterait de
    révéler le domicile, y compris en cas de désistement après paiement. Non
