@@ -14,17 +14,23 @@ async function ouvrirFeuille(page) {
   await expect(feuille(page)).toBeVisible();
 }
 
-/** Les annonces de la derniere reponse de l'API, pour verifier les criteres. */
-function suivreReponses(page) {
+/**
+ * Annonces de la derniere reponse dont l'URL contient `marque`. Filtrer sur
+ * l'URL est necessaire : en developpement, React monte l'ecran deux fois, et
+ * une requete initiale peut arriver apres celle qu'on verifie.
+ */
+function suivreReponses(page, marque) {
   const derniere = { annonces: [] };
   page.on('response', async (r) => {
-    if (r.url().includes('/api/annonces?') && r.ok()) derniere.annonces = (await r.json()).annonces;
+    if (r.url().includes('/api/annonces?') && r.url().includes(marque) && r.ok()) {
+      derniere.annonces = (await r.json()).annonces;
+    }
   });
   return derniere;
 }
 
 test('Combiner plusieurs filtres (cas nominal)', async ({ page }) => {
-  const reponse = suivreReponses(page);
+  const reponse = suivreReponses(page, 'participationMax=5');
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche');
   await ouvrirFeuille(page);
   await feuille(page).getByRole('button', { name: 'Mobilier' }).click();
@@ -37,7 +43,7 @@ test('Combiner plusieurs filtres (cas nominal)', async ({ page }) => {
   await expect(puces).toHaveCount(3);
   await expect(compteur(page)).toBeVisible();
   await expect(cartes(page).first()).toBeVisible();
-  expect(reponse.annonces.length).toBeGreaterThan(0);
+  await expect.poll(() => reponse.annonces.length).toBeGreaterThan(0);
   for (const a of reponse.annonces) {
     expect(a.categorie.id).toBe('mobilier');
     expect(a.etat).toBe('tres_bon_etat');
@@ -47,7 +53,7 @@ test('Combiner plusieurs filtres (cas nominal)', async ({ page }) => {
 });
 
 test('Filtres et mot-clé ensemble', async ({ page }) => {
-  const reponse = suivreReponses(page);
+  const reponse = suivreReponses(page, 'etat=bon_etat');
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche');
   await page.getByRole('searchbox').fill('étagère');
   await expect(compteur(page)).toContainText('« étagère »');
@@ -58,6 +64,7 @@ test('Filtres et mot-clé ensemble', async ({ page }) => {
   await expect(page).toHaveURL(/q=/);
   await expect(page).toHaveURL(/etat=bon_etat/);
   await expect(compteur(page)).toContainText('« étagère »');
+  await expect.poll(() => reponse.annonces.length).toBeGreaterThan(0);
   for (const a of reponse.annonces) {
     expect(a.etat).toBe('bon_etat');
     expect(`${a.titre} ${a.description}`.toLowerCase()).toContain('étagère');

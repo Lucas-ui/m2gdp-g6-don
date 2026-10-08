@@ -1,7 +1,13 @@
 import { Link } from "react-router";
-import { Heart } from "lucide-react";
+import { CalendarDays, Heart } from "lucide-react";
 import ImageAnnonce from "@/components/ImageAnnonce.jsx";
-import { LIBELLES_ETAT, formaterParticipation, lieuAnnonce, nomOffrant } from "@/lib/format.js";
+import {
+  LIBELLES_ETAT,
+  formaterCreneau,
+  formaterParticipation,
+  lieuAnnonce,
+  nomOffrant,
+} from "@/lib/format.js";
 
 /**
  * Carte d'annonce, reutilisee par l'accueil, la recherche, les favoris et
@@ -48,6 +54,13 @@ export default function CarteAnnonce({ annonce, variante = "accueil" }) {
           <p className="mt-1 flex items-center gap-1.5 text-xs text-ardoise">
             <Heart className="size-3.5 shrink-0 fill-primary text-primary" aria-hidden="true" />
             <span className="truncate">Reversé à {annonce.association.nom}</span>
+          </p>
+        )}
+
+        {enPastille && annonce.creneauRetrait && (
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-ardoise">
+            <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+            <span className="truncate">{formaterCreneau(annonce.creneauRetrait, { court: true })}</span>
           </p>
         )}
 

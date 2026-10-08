@@ -38,3 +38,4 @@ appels réseau, sans toucher aux données.
 | `e2e/fiche-annonce.spec.js` | US-9 — Fiche d’annonce, adresse jamais exposée (#37) |
 | `e2e/recherche.spec.js` | US-13 — Recherche par mot-clé en liste (#41) |
 | `e2e/filtres.spec.js` | US-14 — Filtres catégorie, état, participation (#42) |
+| `e2e/tri.spec.js` | US-15 — Tri par date, participation ou créneau (#43) |
