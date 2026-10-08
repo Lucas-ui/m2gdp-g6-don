@@ -52,12 +52,14 @@ const resume = (entree) => (entree ? { id: entree.id, libelle: entree.libelle } 
  */
 export function versAnnoncePublique(annonce, contexte) {
   const association = contexte.associations.get(annonce.associationId);
+  const categorie = contexte.categories.get(annonce.categorieId);
+  const sousCategorie = contexte.categories.get(annonce.sousCategorieId);
   return {
     id: annonce.id,
     titre: annonce.titre,
     description: annonce.description,
-    categorie: resume(contexte.categories.get(annonce.categorieId)),
-    sousCategorie: resume(contexte.categories.get(annonce.sousCategorieId)),
+    categorie: resume(categorie),
+    sousCategorie: resume(sousCategorie),
     etat: annonce.etat,
     participation: annonce.participation,
     association: association ? { id: association.id, nom: association.nom } : undefined,
@@ -69,6 +71,9 @@ export function versAnnoncePublique(annonce, contexte) {
     latitudeApprochee: annonce.latitudeApprochee,
     longitudeApprochee: annonce.longitudeApprochee,
     medias: [],
+    // US-12 : sans photo, l'annonce prend l'illustration de sa sous-categorie,
+    // plus precise, sinon celle de sa categorie principale.
+    illustrationUrl: sousCategorie?.illustrationUrl || categorie?.illustrationUrl,
     statut: annonce.statut,
     assisteeParIA: Boolean(annonce.assisteeParIA),
     creeLe: annonce.creeLe,

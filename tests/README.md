@@ -34,3 +34,4 @@ appels réseau, sans toucher aux données.
 | Fichier | US |
 | --- | --- |
 | `e2e/accueil.spec.js` | US-4 — Accueil, menu du bas, derniers objets (#32) |
+| `e2e/illustration-par-defaut.spec.js` | US-12 — Illustration des annonces sans photo (#40) |
