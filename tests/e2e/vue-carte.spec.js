@@ -33,12 +33,26 @@ test('Les filtres s’appliquent aussi à la carte', async ({ page }) => {
   const reponse = page.waitForResponse((r) => r.url().includes('/api/annonces?') && r.url().includes('categorieId=animaux'));
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche?vue=carte&categorieId=animaux');
   const { annonces } = await (await reponse).json();
-  await expect(epingles(page)).toHaveCount(annonces.length);
+  // Une epingle par position : les annonces d'une meme adresse se regroupent.
+  const positions = new Set(annonces.map((a) => `${a.latitudeApprochee},${a.longitudeApprochee}`));
+  await expect(epingles(page)).toHaveCount(positions.size);
+});
+
+test('Plusieurs objets au même endroit : une épingle, et la liste dans l’aperçu', async ({ page }) => {
+  await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche?vue=carte');
+  const groupe = page.locator('.leaflet-marker-icon[title$="objets à cet endroit"]').first();
+  const titre = await groupe.getAttribute('title');
+  const nombre = Number(titre.split(' ')[0]);
+  // Des epingles voisines se recouvrent a ce zoom : on vise celle-ci directement.
+  await groupe.dispatchEvent('click');
+  await expect(page.getByText(titre).last()).toBeVisible();
+  const liens = page.locator('.z-500').getByRole('link');
+  await expect(liens).toHaveCount(nombre);
 });
 
 test('Toucher une épingle ouvre un aperçu, puis la fiche', async ({ page }) => {
   await ouvrirConnecte(page, PROFILS.demandeurSeul, '/recherche?vue=carte&categorieId=mobilier');
-  const epingle = epingles(page).last();
+  const epingle = epingles(page).filter({ hasNot: page.locator('span') }).last();
   const titre = await epingle.getAttribute('title');
   await epingle.click();
   await expect(page.getByText(titre).last()).toBeVisible();
