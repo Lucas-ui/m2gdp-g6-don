@@ -6,7 +6,7 @@
  * plus simple que des index composites Firestore, et Firestore ne sait de
  * toute facon pas chercher du texte sans accents.
  */
-import { listerCollection } from './firestore.js';
+import { lireDocument, listerCollection } from './firestore.js';
 import { associations, categoriesAPlat } from './referentiels.js';
 
 /** Statuts visibles par defaut : une annonce reservee accepte encore la file d'attente. */
@@ -27,6 +27,32 @@ export async function chargerContexte(jeton, projectId) {
     associations: parId(listeAssociations),
     utilisateurs: parId(utilisateurs),
   };
+}
+
+/**
+ * Une seule annonce, sous sa forme publique, ou null si elle n'existe pas ou a
+ * ete retiree par son offrant. Une annonce remise reste consultable : un lien
+ * partage ne doit pas tomber sur une erreur, la fiche dit simplement que
+ * l'objet a trouve preneur.
+ */
+export async function chargerAnnonce(jeton, projectId, id) {
+  const annonce = await lireDocument(jeton, projectId, 'annonces', id);
+  if (!annonce || annonce.statut === 'retiree') return null;
+
+  const [categories, listeAssociations, offrant] = await Promise.all([
+    categoriesAPlat(jeton, projectId),
+    associations(jeton, projectId),
+    lireDocument(jeton, projectId, 'utilisateurs', annonce.offrantId),
+  ]);
+  const parId = (liste) => new Map(liste.map((x) => [x.id, x]));
+  return versAnnoncePublique(
+    { id, ...annonce },
+    {
+      categories: parId(categories),
+      associations: parId(listeAssociations),
+      utilisateurs: new Map(offrant ? [[annonce.offrantId, { id: annonce.offrantId, ...offrant }]] : []),
+    },
+  );
 }
 
 /**
