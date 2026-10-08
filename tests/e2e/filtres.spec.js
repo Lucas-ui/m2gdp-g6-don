@@ -137,6 +137,10 @@ test('Filtres conservés au retour', async ({ page }) => {
   await ouvrirFeuille(page);
   await feuille(page).getByRole('button', { name: 'Mobilier' }).click();
   await feuille(page).getByRole('button', { name: 'Appliquer' }).click();
+  // La liste precedente reste affichee pendant le chargement : on attend la
+  // fin de la mise a jour avant de lire le premier resultat.
+  await expect(page.getByRole('button', { name: 'Retirer le filtre Mobilier' })).toBeVisible();
+  await expect(page.locator('main ul[aria-busy]')).toHaveAttribute('aria-busy', 'false');
   await expect(cartes(page).first()).toBeVisible();
   const premierTitre = await cartes(page).first().getByRole('heading').innerText();
 

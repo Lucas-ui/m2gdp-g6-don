@@ -104,11 +104,15 @@ export default function FicheAnnonce({ profil }) {
   const montant = formaterParticipation(annonce.participation);
 
   return (
-    <article className="pb-36">
-      <div className="relative">
-        <ImageAnnonce annonce={annonce} className="h-72 w-full" />
+    // Grand ecran : visuel a gauche, qui reste a l'ecran, informations a droite.
+    <article className="pb-36 lg:grid lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-12 lg:pb-0">
+      <div className="relative lg:sticky lg:top-[calc(var(--hauteur-entete)+2rem)]">
+        <ImageAnnonce
+          annonce={annonce}
+          className="h-72 w-full lg:aspect-4/3 lg:h-auto lg:rounded-[2rem] lg:shadow-[0_24px_60px_-36px_rgb(155_77_219/45%)]"
+        />
         {/* Fixe : le retour reste a portee quand on lit le bas de la fiche. */}
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md justify-between p-4">
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md justify-between p-4 lg:absolute lg:max-w-none">
           <span className="pointer-events-auto">
             <BoutonSurPhoto onClick={revenir} aria-label="Retour">
               <ChevronLeft className="size-5" aria-hidden="true" />
@@ -117,8 +121,8 @@ export default function FicheAnnonce({ profil }) {
         </div>
       </div>
 
-      <div className="px-5 pt-5">
-        <h1 className="doneo-titre text-[1.75rem] leading-tight">{annonce.titre}</h1>
+      <div className="px-5 pt-5 lg:p-0">
+        <h1 className="doneo-titre text-[1.75rem] leading-tight lg:text-[2.6rem]">{annonce.titre}</h1>
 
         <ul className="mt-3 flex flex-wrap gap-2 text-sm font-medium" aria-label="Caractéristiques">
           {annonce.sousCategorie && (
@@ -149,6 +153,28 @@ export default function FicheAnnonce({ profil }) {
               <p className="mt-0.5 text-sm text-ardoise">Reversée à {annonce.association.nom}</p>
             )}
           </div>
+        </div>
+
+          {/* Barre d'action : fixe en bas sur mobile, a la place du menu ; sur grand
+              ecran, carte juste sous la participation, la ou le regard se pose. */}
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md rounded-t-[1.75rem] border-t border-primary/10 bg-white px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)] lg:static lg:mt-5 lg:max-w-none lg:rounded-3xl lg:border lg:p-5 lg:shadow-[0_16px_40px_-28px_rgb(155_77_219/45%)]">
+          {estLaMienne ? (
+            <Button asChild variant="doneoSecondaire" size="pilule" className="w-full">
+              <Link to="/">Retour à l’accueil</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="doneo" size="pilule" className="w-full" disabled aria-describedby="reservation-bientot">
+                <Heart className="size-5 fill-current" aria-hidden="true" />
+                {remise ? "Objet déjà remis" : reservee ? "Rejoindre la liste d’attente" : `Réserver pour ${montant}`}
+              </Button>
+              {!remise && (
+                <p id="reservation-bientot" className="mt-2 text-center text-xs text-muted-foreground">
+                  La réservation ouvre très bientôt.
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {annonce.description && (
@@ -192,26 +218,6 @@ export default function FicheAnnonce({ profil }) {
         </p>
       </div>
 
-      {/* Barre d'action fixe en bas, a la place du menu. */}
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md rounded-t-[1.75rem] border-t border-primary/10 bg-white px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)]">
-        {estLaMienne ? (
-          <Button asChild variant="doneoSecondaire" size="pilule" className="w-full">
-            <Link to="/">Retour à l’accueil</Link>
-          </Button>
-        ) : (
-          <>
-            <Button variant="doneo" size="pilule" className="w-full" disabled aria-describedby="reservation-bientot">
-              <Heart className="size-5 fill-current" aria-hidden="true" />
-              {remise ? "Objet déjà remis" : reservee ? "Rejoindre la liste d’attente" : `Réserver pour ${montant}`}
-            </Button>
-            {!remise && (
-              <p id="reservation-bientot" className="mt-2 text-center text-xs text-muted-foreground">
-                La réservation ouvre très bientôt.
-              </p>
-            )}
-          </>
-        )}
-      </div>
     </article>
   );
 }

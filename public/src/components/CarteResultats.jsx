@@ -109,11 +109,11 @@ function ApercuGroupe({ annonces }) {
  * `annonces` vaut null pendant un chargement : la carte reste alors telle
  * quelle, sans revenir sur Lyon a chaque frappe.
  */
-export default function CarteResultats({ annonces }) {
+export default function CarteResultats({ annonces, surbrillance = null }) {
   const conteneur = useRef(null);
   const carte = useRef(null);
   const calque = useRef(null);
-  const marqueurs = useRef(new Map()); // cle de groupe -> marqueur Leaflet
+  const marqueurs = useRef(new Map()); // cle de groupe -> { marqueur, groupe }
   const [choisi, setChoisi] = useState(null); // groupe dont l'apercu est ouvert
 
   // Creation de la carte, une seule fois.
@@ -152,7 +152,7 @@ export default function CarteResultats({ annonces }) {
       const marqueur = L.marker(groupe.position, { icon: epingle(false, n), title: libelle, alt: libelle, keyboard: true })
         .on("click", () => setChoisi(groupe))
         .addTo(calque.current);
-      marqueurs.current.set(groupe.cle, marqueur);
+      marqueurs.current.set(groupe.cle, { marqueur, groupe });
     }
 
     if (groupes.length) {
@@ -165,15 +165,16 @@ export default function CarteResultats({ annonces }) {
     }
   }, [annonces]);
 
-  // L'epingle de l'apercu ouvert passe en violet fonce et au premier plan :
-  // on voit a quel endroit l'apercu correspond.
+  // Epingles mises en evidence (violet fonce, au premier plan) : celle de
+  // l'apercu ouvert, et — sur grand ecran — celle de l'annonce survolee dans
+  // la liste, pour relier d'un coup d'oeil la carte et la liste.
   useEffect(() => {
-    if (!choisi) return undefined;
-    const marqueur = marqueurs.current.get(choisi.cle);
-    const n = choisi.annonces.length;
-    marqueur?.setIcon(epingle(true, n)).setZIndexOffset(1000);
-    return () => marqueur?.setIcon(epingle(false, n)).setZIndexOffset(0);
-  }, [choisi]);
+    for (const { marqueur, groupe } of marqueurs.current.values()) {
+      const active =
+        groupe.cle === choisi?.cle || groupe.annonces.some((a) => a.id === surbrillance);
+      marqueur.setIcon(epingle(active, groupe.annonces.length)).setZIndexOffset(active ? 1000 : 0);
+    }
+  }, [choisi, surbrillance, annonces]);
 
   return (
     <div className="carte-doneo relative isolate h-full overflow-hidden">
@@ -186,7 +187,7 @@ export default function CarteResultats({ annonces }) {
 
       {/* Apercu au-dessus des coins arrondis du menu, qui recouvrent le bas de la carte. */}
       {choisi && (
-        <div className="absolute inset-x-4 bottom-11 z-500">
+        <div className="absolute inset-x-4 bottom-11 z-500 lg:bottom-4">
           <div className="doneo-carte flex gap-3.5 p-3">
             {choisi.annonces.length === 1 ? (
               <ApercuAnnonce annonce={choisi.annonces[0]} />

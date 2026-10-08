@@ -24,7 +24,7 @@ export default function Annuaire({ profil }) {
   }, []);
 
   return (
-    <section>
+    <section className="lg:mx-auto lg:max-w-4xl">
       <EnTeteRetour titre="Membres" sousTitre={utilisateurs && `${utilisateurs.length} inscrits`} />
 
       {erreur && (
@@ -35,7 +35,7 @@ export default function Annuaire({ profil }) {
       {!erreur && !utilisateurs && <p className="mt-4 text-sm text-muted-foreground">Chargement…</p>}
 
       {utilisateurs && (
-        <ul className="mt-4 space-y-2.5">
+        <ul className="mt-4 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {utilisateurs.map((u) => (
             <li key={u.id} className="doneo-carte flex items-center gap-3.5 p-3">
               <span

@@ -7,6 +7,7 @@ import { EtatVide, ErreurChargement, ListeEnChargement } from "@/components/Etat
 import EnTeteCollant from "@/components/EnTeteCollant.jsx";
 import FeuilleFiltres, { FILTRES_VIDES } from "@/components/FeuilleFiltres.jsx";
 import { chargerCategories, chercherAnnonces } from "@/lib/api.js";
+import { useGrandEcran } from "@/lib/ecran.js";
 import { LIBELLES_ETAT, formaterParticipation } from "@/lib/format.js";
 
 // La carte et Leaflet (~150 ko) ne se chargent qu'a la premiere ouverture.
@@ -39,7 +40,11 @@ const pepites = (n) => `${n} ${n > 1 ? "pépites" : "pépite"}`;
 export default function Recherche() {
   const [parametres, setParametres] = useSearchParams();
   const q = parametres.get("q") || "";
-  const surCarte = parametres.get("vue") === "carte";
+  // Grand ecran : liste et carte cote a cote, plus de bascule. La vue
+  // « carte » de l'URL ne concerne que le mobile.
+  const grandEcran = useGrandEcran();
+  const surCarte = !grandEcran && parametres.get("vue") === "carte";
+  const [survolee, setSurvolee] = useState(null);
   const tri = TRIS.some((t) => t.valeur === parametres.get("tri")) ? parametres.get("tri") : "recent";
   const cleFiltres = CLES_FILTRES.map((c) => parametres.get(c) || "").join("|");
   const filtres = useMemo(
@@ -281,7 +286,7 @@ export default function Recherche() {
         )}
 
         {/* Bascule Carte / Liste, d'apres les ecrans 05 et 06 de la maquette. */}
-        <div role="group" aria-label="Affichage" className="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-lavande p-1">
+        <div role="group" aria-label="Affichage" className="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-lavande p-1 lg:hidden">
           {[
             { carte: true, libelle: "Carte" },
             { carte: false, libelle: "Liste" },
@@ -300,7 +305,8 @@ export default function Recherche() {
         </div>
       </EnTeteCollant>
 
-      <div className="mt-2">
+      <div className="mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-8">
+      <div>
         <p className="flex min-h-8 items-center gap-2 font-semibold text-ardoise" aria-live="polite">
           <img src="/illustrations/objet-etoile.svg" alt="" aria-hidden="true" className="size-7" />
           {resultat && !erreur
@@ -404,7 +410,7 @@ export default function Recherche() {
                 className={`space-y-3 transition-opacity duration-200 ${chargement ? "opacity-50" : ""}`}>
                 {annonces.map((a) => (
                   <li key={a.id}>
-                    <CarteAnnonce annonce={a} variante="recherche" />
+                    <CarteAnnonce annonce={a} variante="recherche" surSurvol={grandEcran ? setSurvolee : undefined} />
                   </li>
                 ))}
               </ul>
@@ -427,6 +433,17 @@ export default function Recherche() {
             </>
           )}
         </div>
+      </div>
+
+      {/* Grand ecran : la carte reste a l'ecran pendant que la liste defile,
+          et montre les annonces deja chargees dans la liste. */}
+      {grandEcran && (
+        <div className="sticky top-[calc(var(--hauteur-entete)+1.5rem)] h-[calc(100dvh-var(--hauteur-entete)-3rem)] overflow-hidden rounded-[2rem] shadow-[0_24px_60px_-36px_rgb(155_77_219/45%)]">
+          <Suspense fallback={<div className="h-full animate-pulse bg-menthe/40" />}>
+            <CarteResultats annonces={annonces} surbrillance={survolee} />
+          </Suspense>
+        </div>
+      )}
       </div>
 
       <FeuilleFiltres
