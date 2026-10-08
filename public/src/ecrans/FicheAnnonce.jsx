@@ -109,10 +109,10 @@ export default function FicheAnnonce({ profil }) {
       <div className="relative lg:sticky lg:top-[calc(var(--hauteur-entete)+2rem)]">
         <ImageAnnonce
           annonce={annonce}
-          className="h-72 w-full lg:aspect-4/3 lg:h-auto lg:rounded-[2rem] lg:shadow-[0_24px_60px_-36px_rgb(155_77_219/45%)]"
+          className="h-72 w-full md:aspect-4/3 md:h-auto lg:rounded-[2rem] lg:shadow-[0_24px_60px_-36px_rgb(155_77_219/45%)]"
         />
         {/* Fixe : le retour reste a portee quand on lit le bas de la fiche. */}
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md justify-between p-4 lg:absolute lg:max-w-none">
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md justify-between p-4 md:max-w-3xl lg:absolute lg:max-w-none">
           <span className="pointer-events-auto">
             <BoutonSurPhoto onClick={revenir} aria-label="Retour">
               <ChevronLeft className="size-5" aria-hidden="true" />
@@ -157,7 +157,7 @@ export default function FicheAnnonce({ profil }) {
 
           {/* Barre d'action : fixe en bas sur mobile, a la place du menu ; sur grand
               ecran, carte juste sous la participation, la ou le regard se pose. */}
-        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md rounded-t-[1.75rem] border-t border-primary/10 bg-white px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)] lg:static lg:mt-5 lg:max-w-none lg:rounded-3xl lg:border lg:p-5 lg:shadow-[0_16px_40px_-28px_rgb(155_77_219/45%)]">
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md rounded-t-[1.75rem] border-t md:max-w-3xl border-primary/10 bg-white px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)] lg:static lg:mt-5 lg:max-w-none lg:rounded-3xl lg:border lg:p-5 lg:shadow-[0_16px_40px_-28px_rgb(155_77_219/45%)]">
           {estLaMienne ? (
             <Button asChild variant="doneoSecondaire" size="pilule" className="w-full">
               <Link to="/">Retour à l’accueil</Link>

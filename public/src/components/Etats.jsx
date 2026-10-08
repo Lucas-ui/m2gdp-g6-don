@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button.jsx";
 /** Squelettes de cartes pendant le chargement d'une liste. */
 export function ListeEnChargement({ nombre = 3 }) {
   return (
-    <ul className="space-y-3" aria-label="Chargement en cours" aria-busy="true">
+    <ul className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 lg:block lg:space-y-3" aria-label="Chargement en cours" aria-busy="true">
       {Array.from({ length: nombre }, (_, i) => (
         <li key={i} className="doneo-carte flex animate-pulse gap-3.5 p-3">
           <div className="size-28 shrink-0 rounded-2xl bg-lavande" />

@@ -34,7 +34,7 @@ export default function CarteAnnonce({ annonce, variante = "accueil", grille = f
       onMouseLeave={() => signaler(false)}
       onFocus={() => signaler(true)}
       onBlur={() => signaler(false)}
-      className={`doneo-carte flex gap-3.5 p-3 transition focus-visible:ring-4 focus-visible:ring-primary/25 focus-visible:outline-none active:scale-[0.99] lg:hover:-translate-y-0.5 lg:hover:shadow-[0_16px_32px_-16px_rgb(155_77_219/35%)] ${
+      className={`doneo-carte flex gap-3.5 p-3 transition md:h-full focus-visible:ring-4 focus-visible:ring-primary/25 focus-visible:outline-none active:scale-[0.99] lg:hover:-translate-y-0.5 lg:hover:shadow-[0_16px_32px_-16px_rgb(155_77_219/35%)] ${
         grille ? "lg:h-full lg:flex-col lg:gap-0 lg:overflow-hidden lg:p-0" : ""
       }`}>
       <ImageAnnonce

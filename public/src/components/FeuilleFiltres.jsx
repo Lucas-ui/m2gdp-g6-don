@@ -94,7 +94,7 @@ export default function FeuilleFiltres({ ouverte, categories, filtres, surAppliq
         aria-modal="true"
         aria-labelledby={titreId}
         onSubmit={appliquer}
-        className="relative flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-4xl bg-lilas shadow-2xl lg:max-w-xl lg:rounded-4xl">
+        className="relative flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-4xl md:max-w-2xl bg-lilas shadow-2xl lg:max-w-xl lg:rounded-4xl">
         <div className="overflow-y-auto px-5 pt-3 pb-4">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-lavande-soutenue/70 lg:hidden" aria-hidden="true" />
           <div className="mt-3 flex items-center justify-between">
