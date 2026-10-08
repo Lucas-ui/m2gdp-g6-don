@@ -168,7 +168,7 @@ export default function Accueil() {
         {!erreur && annonces?.length > 0 && (
           <ul
             aria-busy={chargement}
-            className={`space-y-3 transition-opacity duration-200 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 ${chargement ? "opacity-50" : ""}`}>
+            className={`space-y-3 transition-opacity duration-200 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 lg:grid-cols-3 lg:gap-6 ${chargement ? "opacity-50" : ""}`}>
             {annonces.map((a) => (
               <li key={a.id}>
                 <CarteAnnonce annonce={a} grille />

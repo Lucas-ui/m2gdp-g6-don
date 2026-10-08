@@ -18,7 +18,7 @@ export default function MenuBas() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-(--hauteur-menu) lg:hidden max-w-md items-start justify-around rounded-t-[1.75rem] border-t border-primary/10 bg-white px-3 pt-2.5 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)]">
+      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-(--hauteur-menu) lg:hidden max-w-md md:max-w-3xl items-start justify-around rounded-t-[1.75rem] border-t border-primary/10 bg-white px-3 pt-2.5 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_-14px_rgb(155_77_219/30%)]">
       {ONGLETS.map(({ vers, libelle, Icone, exact, central }) => (
         <NavLink
           key={vers}

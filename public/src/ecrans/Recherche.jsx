@@ -358,7 +358,7 @@ export default function Recherche() {
               <div ref={repereCarte} aria-hidden="true" />
               {hautCarte !== null && (
                 <div
-                  className="fixed inset-x-0 z-10 mx-auto max-w-md"
+                  className="fixed inset-x-0 z-10 mx-auto max-w-md md:max-w-3xl"
                   style={{ top: hautCarte, bottom: "calc(var(--hauteur-menu) - 1.75rem)" }}>
                   <Suspense fallback={<div className="h-full animate-pulse bg-menthe/40" />}>
                     <CarteResultats annonces={annonces} />
@@ -407,7 +407,7 @@ export default function Recherche() {
             <>
               <ul
                 aria-busy={chargement}
-                className={`space-y-3 transition-opacity duration-200 ${chargement ? "opacity-50" : ""}`}>
+                className={`space-y-3 transition-opacity duration-200 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 lg:block lg:space-y-3 ${chargement ? "opacity-50" : ""}`}>
                 {annonces.map((a) => (
                   <li key={a.id}>
                     <CarteAnnonce annonce={a} variante="recherche" surSurvol={grandEcran ? setSurvolee : undefined} />

@@ -43,3 +43,4 @@ appels réseau, sans toucher aux données.
 | `e2e/regressions-revue.spec.js` | Non-régression des défauts relevés par la revue de code du J4 |
 | `e2e/ergonomie-mobile.spec.js` | En-têtes collants, pas de saut au changement de tri, retour toujours accessible |
 | `e2e/grand-ecran.spec.js` | Affichage grand écran (1440 px) : navigation, grille, liste + carte, fiche |
+| `e2e/tablette.spec.js` | Affichage tablette (820 px) : deux colonnes, menu du bas |

@@ -33,7 +33,7 @@ function CoqueConnectee({ profil }) {
       <EnTeteBureau profil={profil} />
       {/* Mobile : colonne etroite, menu du bas. Grand ecran : largeur d'un
           site, barre de navigation en haut. */}
-      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 pb-[calc(var(--hauteur-menu)+2rem)] lg:min-h-[calc(100dvh-var(--hauteur-entete))] lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-16">
+      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 md:max-w-3xl pb-[calc(var(--hauteur-menu)+2rem)] lg:min-h-[calc(100dvh-var(--hauteur-entete))] lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-16">
         <Outlet />
       </main>
       <MenuBas />
@@ -49,7 +49,7 @@ function CoquePleinCadre({ profil }) {
   return (
     <div className="doneo-coque">
       <EnTeteBureau profil={profil} />
-      <main className="mx-auto min-h-dvh max-w-md lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-16">
+      <main className="mx-auto min-h-dvh max-w-md md:max-w-3xl lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-16">
         <Outlet />
       </main>
     </div>
