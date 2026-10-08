@@ -13,6 +13,9 @@ import { correspond } from './texte.js';
 /** Statuts visibles par defaut : une annonce reservee accepte encore la file d'attente. */
 const STATUTS_VISIBLES = ['disponible', 'reserve'];
 
+/** Valeurs d'etat de l'objet (schema EtatObjet). */
+export const ETATS = ['neuf', 'tres_bon_etat', 'bon_etat', 'usage'];
+
 /** Tout ce qu'il faut pour presenter une annonce : referentiels et offrants. */
 export async function chargerContexte(jeton, projectId) {
   const [annonces, categories, listeAssociations, utilisateurs] = await Promise.all([
@@ -132,12 +135,26 @@ export function rechercherAnnonces(contexte, parametres) {
   if (erreurs.length) return { erreurs };
 
   const categorieId = parametres.get('categorieId');
+  const sousCategorieId = parametres.get('sousCategorieId');
   const q = (parametres.get('q') || '').trim();
-  if (q.length > 100) return { erreurs: ['La recherche est trop longue (100 caractères au plus).'] };
+  if (q.length > 100) erreurs.push('La recherche est trop longue (100 caractères au plus).');
+
+  const etat = parametres.get('etat');
+  if (etat && !ETATS.includes(etat)) erreurs.push(`« etat » doit valoir : ${ETATS.join(', ')}.`);
+
+  const brutMax = parametres.get('participationMax');
+  const participationMax = brutMax === null || brutMax === '' ? null : Number(brutMax);
+  if (participationMax !== null && (!Number.isFinite(participationMax) || participationMax < 0)) {
+    erreurs.push('La participation maximale doit être un nombre positif.');
+  }
+  if (erreurs.length) return { erreurs };
 
   const retenues = contexte.annonces
     .filter((a) => STATUTS_VISIBLES.includes(a.statut))
     .filter((a) => !categorieId || a.categorieId === categorieId)
+    .filter((a) => !sousCategorieId || a.sousCategorieId === sousCategorieId)
+    .filter((a) => !etat || a.etat === etat)
+    .filter((a) => participationMax === null || a.participation <= participationMax)
     // Chaque mot doit figurer dans le titre ou la description, sans tenir
     // compte des accents ni de la casse : « etagere » trouve « Étagère ».
     .filter((a) => !q || correspond(q, a.titre, a.description))
