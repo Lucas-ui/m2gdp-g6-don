@@ -57,11 +57,14 @@ function heure(date) {
  * « samedi 14 novembre · 14 h – 16 h ». `court` donne « sam. 14 nov. ».
  */
 export function formaterCreneau(creneau, { court = false } = {}) {
-  if (!creneau?.debut) return '';
-  const debut = new Date(creneau.debut);
+  const debut = new Date(creneau?.debut);
+  // Une date invalide ferait lever Intl (« Invalid time value ») et planter
+  // tout l'ecran : on n'affiche rien plutot.
+  if (Number.isNaN(debut.getTime())) return '';
   const fin = new Date(creneau.fin);
   const jour = (court ? jourCourt : jourLong).format(debut);
-  return `${jour.charAt(0).toUpperCase()}${jour.slice(1)} · ${heure(debut)} – ${heure(fin)}`;
+  const plage = Number.isNaN(fin.getTime()) ? `à partir de ${heure(debut)}` : `${heure(debut)} – ${heure(fin)}`;
+  return `${jour.charAt(0).toUpperCase()}${jour.slice(1)} · ${plage}`;
 }
 
 /** Vrai si le creneau est deja termine. */
