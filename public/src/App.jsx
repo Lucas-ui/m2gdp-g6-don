@@ -1,18 +1,38 @@
 import { useEffect, useRef, useState } from "react";
+import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
 import Champ from "@/components/Champ.jsx";
 import Logo from "@/components/Logo.jsx";
+import MenuBas from "@/components/MenuBas.jsx";
 import Connexion from "@/ecrans/Connexion.jsx";
 import Inscription from "@/ecrans/Inscription.jsx";
 import Accueil from "@/ecrans/Accueil.jsx";
+import Annuaire from "@/ecrans/Annuaire.jsx";
+import Bientot from "@/ecrans/Bientot.jsx";
 import LienInvalide from "@/ecrans/LienInvalide.jsx";
+import Profil from "@/ecrans/Profil.jsx";
 import { chargerProfil } from "@/lib/api.js";
 import {
   estRetourDeLien,
   finaliserConnexion,
   surChangementAuth,
 } from "@/lib/auth.js";
+
+/**
+ * Coque des ecrans connectes : colonne mobile centree, menu du bas fixe.
+ * La marge basse laisse le dernier element visible au-dessus du menu.
+ */
+function CoqueConnectee() {
+  return (
+    <div className="doneo-coque">
+      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 pb-32">
+        <Outlet />
+      </main>
+      <MenuBas />
+    </div>
+  );
+}
 
 function Chargement({ children }) {
   return (
@@ -30,10 +50,10 @@ function Chargement({ children }) {
  *   retour de lien magique    -> finalisation, en redemandant l'adresse si
  *                                le lien est ouvert sur un autre appareil
  *   connecte sans profil      -> Inscription
- *   connecte avec profil      -> Accueil
+ *   connecte avec profil      -> ecrans de l'app, sous le routeur
  *
- * Pas de routeur : quatre etats suffisent, et la navigation par onglets
- * viendra avec les maquettes.
+ * Tant que la personne n'est pas connectee avec un profil complet, l'URL ne
+ * compte pas : un visiteur qui ouvre /recherche voit l'ecran de connexion.
  */
 export default function App() {
   const [utilisateur, setUtilisateur] = useState(undefined); // undefined = inconnu
@@ -141,8 +161,48 @@ export default function App() {
   } else if (profil === null) {
     ecran = <Inscription email={utilisateur.email} surTermine={setProfil} />;
   } else {
-    ecran = <Accueil profil={profil} />;
-    avecEnTete = false;
+    return (
+      <Routes>
+        <Route element={<CoqueConnectee />}>
+          <Route index element={<Accueil />} />
+          <Route
+            path="recherche"
+            element={
+              <Bientot titre="Recherche" illustration="/illustrations/objet-etoile.svg">
+                La recherche par mot-clé arrive avec la prochaine version.
+              </Bientot>
+            }
+          />
+          <Route
+            path="annonces/:id"
+            element={
+              <Bientot titre="Annonce" illustration="/illustrations/objet-cadeau.svg">
+                La fiche détaillée de l’annonce arrive avec la prochaine version.
+              </Bientot>
+            }
+          />
+          <Route
+            path="creer"
+            element={
+              <Bientot titre="Créer une annonce" illustration="/illustrations/objet-cadeau.svg">
+                La publication d’un objet arrive avec la prochaine version.
+              </Bientot>
+            }
+          />
+          <Route
+            path="favoris"
+            element={
+              <Bientot titre="Favoris" illustration="/illustrations/objet-coeur.svg">
+                Vous pourrez bientôt garder de côté les objets qui vous plaisent.
+              </Bientot>
+            }
+          />
+          <Route path="profil" element={<Profil profil={profil} />} />
+          <Route path="membres" element={<Annuaire profil={profil} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    );
   }
 
   return (

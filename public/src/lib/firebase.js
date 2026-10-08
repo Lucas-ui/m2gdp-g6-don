@@ -18,5 +18,10 @@ export const firebaseConfig = {
   // sollicitait. A rajouter ici le jour ou elle est provisionnee.
 };
 
-/** URL du backend Cloudflare Workers. */
-export const API_BASE = 'https://doneo-api.guillaume-lorel.workers.dev';
+/**
+ * URL du backend Cloudflare Workers. En local, VITE_API_BASE permet de viser
+ * un Worker lance par `wrangler dev` (voir docs/SETUP.md) ; sans elle, on
+ * appelle le Worker en ligne.
+ */
+export const API_BASE =
+  import.meta.env.VITE_API_BASE || 'https://doneo-api.guillaume-lorel.workers.dev';

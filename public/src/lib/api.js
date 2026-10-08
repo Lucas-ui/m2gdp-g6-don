@@ -58,3 +58,35 @@ export async function listerUtilisateurs() {
   if (!ok) throw new Error(donnees.erreur || 'Chargement de l’annuaire impossible.');
   return donnees.utilisateurs;
 }
+
+// Les categories changent rarement : un seul appel par session suffit, partage
+// par l'accueil, la recherche et la creation d'annonce.
+let categoriesEnCours = null;
+
+/** Arbre des categories (principales, avec leurs sous-categories). */
+export function chargerCategories() {
+  categoriesEnCours ??= appeler('/api/categories').then(({ ok, donnees }) => {
+    if (!ok) {
+      categoriesEnCours = null; // on retentera au prochain appel
+      throw new Error(donnees.erreur || 'Chargement des catégories impossible.');
+    }
+    return donnees.categories;
+  });
+  return categoriesEnCours;
+}
+
+/**
+ * Page d'annonces. `criteres` reprend les parametres de GET /api/annonces ;
+ * les valeurs vides sont ignorees.
+ */
+export async function chercherAnnonces(criteres = {}) {
+  const parametres = new URLSearchParams();
+  for (const [nom, valeur] of Object.entries(criteres)) {
+    if (valeur !== undefined && valeur !== null && valeur !== '') parametres.set(nom, valeur);
+  }
+  const { ok, donnees } = await appeler(`/api/annonces?${parametres}`);
+  if (!ok) {
+    throw new Error(donnees.erreurs?.join(' ') || donnees.erreur || 'Chargement des annonces impossible.');
+  }
+  return donnees;
+}

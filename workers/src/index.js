@@ -11,11 +11,13 @@
  *   GET  /api/utilisateurs        annuaire public des inscrits
  *   GET  /api/categories          arbre des categories
  *   GET  /api/associations        associations beneficiaires
+ *   GET  /api/annonces            recherche d'annonces (forme publique)
  *   GET  /api/health              healthcheck
  */
 
 import { verifierJetonIdentite, jetonService } from './google.js';
 import { lireDocument, ecrireDocument, listerCollection } from './firestore.js';
+import { chargerContexte, rechercherAnnonces } from './annonces.js';
 import { arbreCategories, associations, versAssociation } from './referentiels.js';
 import { correspond } from './texte.js';
 
@@ -294,6 +296,15 @@ export default {
           .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
           .map(versAssociation);
         return json({ associations: liste }, 200, cors);
+      }
+
+      /* --- Annonces ------------------------------------------------------ */
+      if (pathname === '/api/annonces' && request.method === 'GET') {
+        const jeton = await jetonService(env.FIREBASE_SERVICE_ACCOUNT, SCOPES);
+        const contexte = await chargerContexte(jeton, env.FIREBASE_PROJECT_ID);
+        const resultat = rechercherAnnonces(contexte, new URL(request.url).searchParams);
+        if (resultat.erreurs) return json({ erreurs: resultat.erreurs }, 422, cors);
+        return json(resultat, 200, cors);
       }
 
       return json({ erreur: 'Route non trouvée', chemin: pathname }, 404, cors);
