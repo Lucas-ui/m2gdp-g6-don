@@ -75,6 +75,14 @@ export function chargerCategories() {
   return categoriesEnCours;
 }
 
+/** Fiche publique d'une annonce, ou null si elle n'existe pas (ou plus). */
+export async function chargerAnnonce(id) {
+  const { statut, ok, donnees } = await appeler(`/api/annonces/${encodeURIComponent(id)}`);
+  if (statut === 404) return null;
+  if (!ok) throw new Error(donnees.erreur || 'Chargement de l’annonce impossible.');
+  return donnees;
+}
+
 /**
  * Page d'annonces. `criteres` reprend les parametres de GET /api/annonces ;
  * les valeurs vides sont ignorees.

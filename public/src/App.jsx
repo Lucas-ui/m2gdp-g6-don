@@ -10,6 +10,7 @@ import Inscription from "@/ecrans/Inscription.jsx";
 import Accueil from "@/ecrans/Accueil.jsx";
 import Annuaire from "@/ecrans/Annuaire.jsx";
 import Bientot from "@/ecrans/Bientot.jsx";
+import FicheAnnonce from "@/ecrans/FicheAnnonce.jsx";
 import LienInvalide from "@/ecrans/LienInvalide.jsx";
 import Profil from "@/ecrans/Profil.jsx";
 import { chargerProfil } from "@/lib/api.js";
@@ -30,6 +31,20 @@ function CoqueConnectee() {
         <Outlet />
       </main>
       <MenuBas />
+    </div>
+  );
+}
+
+/**
+ * Coque des ecrans plein cadre (fiche d'annonce) : pas de marge, pas de menu
+ * du bas — l'ecran porte sa propre barre d'action, comme sur la maquette.
+ */
+function CoquePleinCadre() {
+  return (
+    <div className="doneo-coque">
+      <main className="mx-auto min-h-dvh max-w-md">
+        <Outlet />
+      </main>
     </div>
   );
 }
@@ -174,14 +189,6 @@ export default function App() {
             }
           />
           <Route
-            path="annonces/:id"
-            element={
-              <Bientot titre="Annonce" illustration="/illustrations/objet-cadeau.svg">
-                La fiche détaillée de l’annonce arrive avec la prochaine version.
-              </Bientot>
-            }
-          />
-          <Route
             path="creer"
             element={
               <Bientot titre="Créer une annonce" illustration="/illustrations/objet-cadeau.svg">
@@ -200,6 +207,9 @@ export default function App() {
           <Route path="profil" element={<Profil profil={profil} />} />
           <Route path="membres" element={<Annuaire profil={profil} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+        <Route element={<CoquePleinCadre />}>
+          <Route path="annonces/:id" element={<FicheAnnonce profil={profil} />} />
         </Route>
       </Routes>
     );
