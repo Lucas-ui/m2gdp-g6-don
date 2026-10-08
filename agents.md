@@ -55,6 +55,20 @@ Spécificités métier :
 - Front public déployé via Firebase Hosting ; Workers déployés via
   `wrangler deploy`.
 
+## Branches et déploiement
+
+Détail dans [`docs/SETUP.md`](docs/SETUP.md) § 5.
+
+- `main` = ce qui est en ligne ; `develop` = intégration ; une branche
+  `feat/<n°>-<sujet>` (ou `fix/…`, `docs/…`) par ticket, créée depuis
+  `develop`.
+- Le travail arrive dans `develop` **par pull request**, et dans `main` par
+  fusion de `develop`. Ne jamais commiter directement sur `main` ni `develop`.
+- **Ne déployer que depuis `main` à jour** (`git checkout main && git pull`) :
+  déployer depuis une autre branche efface du site en ligne le travail des
+  autres.
+- Jamais de `git push --force` sur `main` ni `develop`.
+
 ## Ce que l'IA ne doit pas faire
 
 - Ne jamais committer de secrets (service account key Firebase, tokens

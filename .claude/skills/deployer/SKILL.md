@@ -7,6 +7,19 @@ description: Déploie le projet Donéo — le front et la vitrine sur Firebase H
 
 Deux cibles indépendantes. Ne déployer que celle qui a changé.
 
+## Avant tout : partir de `main` à jour
+
+```bash
+git checkout main && git pull
+git status   # doit être propre
+```
+
+**Ne jamais déployer depuis une autre branche.** `firebase deploy` publie le
+`dist/` local et `wrangler deploy` le code local : déployer depuis une branche
+de ticket ou depuis `develop` efface du site en ligne le travail des autres.
+Si ce qui doit partir n'est pas encore dans `main`, le fusionner d'abord
+(`develop` → `main`, par PR), et prévenir l'équipe.
+
 ## Front et vitrine (Firebase Hosting)
 
 **L'app doit être buildée avant d'être déployée.** Firebase publie

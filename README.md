@@ -22,8 +22,9 @@ révélée qu'une fois la participation validée** — avant, le demandeur ne vo
 qu'un lieu approximatif (code postal et ville). Les rôles `offrant` et
 `demandeur` sont **cumulables** sur un même compte.
 
-> ⚠️ Le **paiement est simulé** : interface front uniquement, aucune transaction
-> ni aucun reversement réels.
+> ⚠️ Le **paiement passe par un vrai prestataire, en mode test uniquement** :
+> le tunnel est réellement parcouru, mais le montant débité est 0. Aucune
+> transaction ni aucun reversement réels.
 
 ## Structure du dépôt
 
@@ -40,8 +41,8 @@ qu'un lieu approximatif (code postal et ville). Les rôles `offrant` et
 
 ## Stack technique
 
-- **Frontend** : PWA, framework Material Design (Shadcn), LeafletJS (carte),
-  Google Places API (géolocalisation)
+- **Frontend** : PWA React, **Tailwind CSS v4 + shadcn/ui** (et non Material
+  Design), LeafletJS (carte), Google Places API (géolocalisation)
 - **Backend** : Cloudflare Workers (logique métier)
 - **Auth** : Firebase Authentication (lien magique, sans mot de passe)
 - **Données** : Firestore (NoSQL) + Firebase Realtime DB (messages)
@@ -51,11 +52,19 @@ qu'un lieu approximatif (code postal et ville). Les rôles `offrant` et
 
 ## Démarrage
 
-Voir [`docs/SETUP.md`](docs/SETUP.md) pour l'installation et la configuration.
+Nouveau sur le projet ? Tout est dans [`docs/SETUP.md`](docs/SETUP.md) :
+lancer le front en local (sans aucun secret), les accès à demander, les
+branches et la règle de déploiement.
+
+En bref :
+
+- On travaille sur une branche `feat/…` créée depuis **`develop`**, et on
+  ouvre une PR vers `develop`.
+- **On ne déploie que depuis `main`**, à jour.
 
 ## Équipe
 
 - PO : _à compléter_
 - UX : _à compléter_
-- DEV : Guillaume
+- DEV : Guillaume, _second dev à compléter_
 - Sponsor / Manager : @quangfr
