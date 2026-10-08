@@ -10,6 +10,9 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
+  // `wrangler dev` traite les requetes une a une : au-dela de 3 navigateurs
+  // en parallele, les reponses tardent et les tests expirent.
+  workers: 3,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: process.env.DONEO_URL || 'http://localhost:5180',

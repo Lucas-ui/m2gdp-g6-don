@@ -8,6 +8,7 @@
  */
 import { lireDocument, listerCollection } from './firestore.js';
 import { associations, categoriesAPlat } from './referentiels.js';
+import { correspond } from './texte.js';
 
 /** Statuts visibles par defaut : une annonce reservee accepte encore la file d'attente. */
 const STATUTS_VISIBLES = ['disponible', 'reserve'];
@@ -131,10 +132,15 @@ export function rechercherAnnonces(contexte, parametres) {
   if (erreurs.length) return { erreurs };
 
   const categorieId = parametres.get('categorieId');
+  const q = (parametres.get('q') || '').trim();
+  if (q.length > 100) return { erreurs: ['La recherche est trop longue (100 caractères au plus).'] };
 
   const retenues = contexte.annonces
     .filter((a) => STATUTS_VISIBLES.includes(a.statut))
     .filter((a) => !categorieId || a.categorieId === categorieId)
+    // Chaque mot doit figurer dans le titre ou la description, sans tenir
+    // compte des accents ni de la casse : « etagere » trouve « Étagère ».
+    .filter((a) => !q || correspond(q, a.titre, a.description))
     // Tri par defaut : les plus recentes d'abord.
     .sort((a, b) => (b.creeLe || '').localeCompare(a.creeLe || ''));
 

@@ -12,8 +12,11 @@ import { LIBELLES_ETAT, formaterParticipation, lieuAnnonce, nomOffrant } from "@
  * l'etat et le quartier — jamais l'adresse exacte, qui n'arrive d'ailleurs pas
  * jusqu'au front.
  */
-export default function CarteAnnonce({ annonce }) {
+export default function CarteAnnonce({ annonce, variante = "accueil" }) {
   const reservee = annonce.statut === "reserve";
+  // Variante « recherche » (ecran 05) : l'etat devient une pastille menthe,
+  // plus lisible quand on compare des resultats.
+  const enPastille = variante === "recherche";
 
   return (
     <Link
@@ -49,9 +52,18 @@ export default function CarteAnnonce({ annonce }) {
         )}
 
         <p className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-xs text-muted-foreground">
-          <span>
-            {LIBELLES_ETAT[annonce.etat]} · {lieuAnnonce(annonce)}
-          </span>
+          {enPastille ? (
+            <>
+              <span className="rounded-full bg-menthe px-2 py-0.5 text-[0.6875rem] font-semibold text-ardoise">
+                {LIBELLES_ETAT[annonce.etat]}
+              </span>
+              <span>{lieuAnnonce(annonce)}</span>
+            </>
+          ) : (
+            <span>
+              {LIBELLES_ETAT[annonce.etat]} · {lieuAnnonce(annonce)}
+            </span>
+          )}
           {reservee && (
             <span className="rounded-full bg-citron px-2 py-0.5 text-[0.6875rem] font-semibold text-ardoise">
               Liste d’attente ouverte

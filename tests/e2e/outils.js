@@ -54,9 +54,11 @@ export async function ouvrirConnecte(page, uid, chemin = '/') {
   await page.evaluate((jeton) => window.__doneoTest.connecter(jeton), jetonPersonnalise(uid));
   await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible();
   if (chemin !== '/') {
-    // Navigation interne, sans recharger : la session reste chargee.
+    // Navigation interne, sans recharger : la session reste chargee. L'etat
+    // reprend la forme de celui du routeur (idx), pour que « Retour » se
+    // comporte comme apres un vrai clic.
     await page.evaluate((c) => {
-      window.history.pushState({}, '', c);
+      window.history.pushState({ usr: null, key: 'test', idx: 1 }, '', c);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }, chemin);
   }
