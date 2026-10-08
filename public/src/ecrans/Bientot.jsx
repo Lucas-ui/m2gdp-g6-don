@@ -8,7 +8,7 @@ import { EtatVide } from "@/components/Etats.jsx";
  */
 export default function Bientot({ titre, illustration, children }) {
   return (
-    <section>
+    <section className="lg:mx-auto lg:max-w-xl">
       <h1 className="doneo-titre text-[2rem]">{titre}</h1>
       <div className="mt-5">
         <EtatVide

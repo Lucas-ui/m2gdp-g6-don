@@ -13,7 +13,7 @@ export default function Profil({ profil }) {
   const initiales = `${profil.prenom?.[0] || ""}${profil.nom?.[0] || ""}`.toUpperCase();
 
   return (
-    <section>
+    <section className="lg:mx-auto lg:max-w-2xl">
       <header className="flex items-center gap-4">
         <span
           aria-hidden="true"

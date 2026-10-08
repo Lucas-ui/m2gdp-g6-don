@@ -18,22 +18,31 @@ import {
  * l'etat et le quartier — jamais l'adresse exacte, qui n'arrive d'ailleurs pas
  * jusqu'au front.
  */
-export default function CarteAnnonce({ annonce, variante = "accueil" }) {
+export default function CarteAnnonce({ annonce, variante = "accueil", grille = false, surSurvol }) {
   const reservee = annonce.statut === "reserve";
   // Variante « recherche » (ecran 05) : l'etat devient une pastille menthe,
   // plus lisible quand on compare des resultats.
   const enPastille = variante === "recherche";
+  // `grille` : sur grand ecran, la carte passe a la verticale, image en haut,
+  // pour se ranger en colonnes. Sur mobile, rien ne change.
+  const signaler = (actif) => surSurvol?.(actif ? annonce.id : null);
 
   return (
     <Link
       to={`/annonces/${annonce.id}`}
-      className="doneo-carte flex gap-3.5 p-3 transition-transform focus-visible:ring-4 focus-visible:ring-primary/25 focus-visible:outline-none active:scale-[0.99]">
+      onMouseEnter={() => signaler(true)}
+      onMouseLeave={() => signaler(false)}
+      onFocus={() => signaler(true)}
+      onBlur={() => signaler(false)}
+      className={`doneo-carte flex gap-3.5 p-3 transition focus-visible:ring-4 focus-visible:ring-primary/25 focus-visible:outline-none active:scale-[0.99] lg:hover:-translate-y-0.5 lg:hover:shadow-[0_16px_32px_-16px_rgb(155_77_219/35%)] ${
+        grille ? "lg:h-full lg:flex-col lg:gap-0 lg:overflow-hidden lg:p-0" : ""
+      }`}>
       <ImageAnnonce
         annonce={annonce}
-        className="size-28 shrink-0 rounded-2xl"
+        className={`size-28 shrink-0 rounded-2xl ${grille ? "lg:aspect-16/10 lg:h-auto lg:w-full lg:rounded-none" : ""}`}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={`flex min-w-0 flex-1 flex-col ${grille ? "lg:p-4" : ""}`}>
         {/* Inter et non Fredoka : sur la maquette, le titre d'une carte est du
             texte courant, pas un titre d'ecran. */}
         <h3 className="line-clamp-2 font-sans text-[0.975rem] leading-snug font-semibold tracking-normal text-ardoise">

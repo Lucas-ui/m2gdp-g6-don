@@ -4,12 +4,19 @@ import { Heart, Search } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
 import CarteAnnonce from "@/components/CarteAnnonce.jsx";
 import { EtatVide, ErreurChargement, ListeEnChargement } from "@/components/Etats.jsx";
+import BandeauAccueil from "@/components/BandeauAccueil.jsx";
+import CommentCaMarche from "@/components/CommentCaMarche.jsx";
 import EnTeteCollant from "@/components/EnTeteCollant.jsx";
 import { Marque } from "@/components/Logo.jsx";
 import { chargerCategories, chercherAnnonces } from "@/lib/api.js";
+import { useGrandEcran } from "@/lib/ecran.js";
 
-/** Nombre d'objets de la section « Derniers objets ajoutes ». */
+/**
+ * Nombre d'objets de la section « Derniers objets ajoutes » : 10 en liste
+ * sur mobile, 12 sur grand ecran pour remplir quatre rangees de trois.
+ */
 const NOMBRE_DERNIERS = 10;
+const NOMBRE_DERNIERS_GRILLE = 12;
 
 /**
  * Accueil (US-4, issue #32) : la barre de recherche, les puces de categories,
@@ -22,7 +29,9 @@ const NOMBRE_DERNIERS = 10;
 export default function Accueil() {
   const [categories, setCategories] = useState([]);
   const [categorieId, setCategorieId] = useState("");
+  const grandEcran = useGrandEcran();
   const [annonces, setAnnonces] = useState(null);
+  const [total, setTotal] = useState(0);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(null);
   const titreListe = useRef(null);
@@ -45,10 +54,11 @@ export default function Accueil() {
     let derniere = true;
     setErreur(null);
     setChargement(true);
-    chercherAnnonces({ tri: "recent", parPage: NOMBRE_DERNIERS, categorieId })
+    chercherAnnonces({ tri: "recent", parPage: grandEcran ? NOMBRE_DERNIERS_GRILLE : NOMBRE_DERNIERS, categorieId })
       .then((page) => {
         if (!derniere) return;
         setAnnonces(page.annonces);
+        if (!categorieId) setTotal(page.total);
         // Si on avait defile plus bas, on remonte au debut de la nouvelle liste.
         const titre = titreListe.current;
         if (titre && titre.getBoundingClientRect().top < 0) titre.scrollIntoView({ block: "start" });
@@ -58,14 +68,21 @@ export default function Accueil() {
     return () => {
       derniere = false;
     };
-  }, [categorieId, tentative]);
+  }, [categorieId, tentative, grandEcran]);
 
   const puces = [{ id: "", libelle: "Tout" }, ...categories];
 
   return (
-    <section>
-      <EnTeteCollant>
-        <header className="flex items-center gap-3">
+    // Grand ecran : bandeau, titre, categories, grille, puis « Comment ca
+    // marche ». Les classes lg:order-* reordonnent sans dupliquer le contenu.
+    <section className="flex flex-col">
+      <h1 className="sr-only lg:hidden">Accueil</h1>
+      <div className="lg:order-1">
+        <BandeauAccueil total={total} />
+      </div>
+
+      <EnTeteCollant className="lg:order-3">
+        <header className="flex items-center gap-3 lg:hidden">
           <Link to="/" aria-label="Donéo — accueil">
             <Marque className="size-10" />
           </Link>
@@ -81,7 +98,7 @@ export default function Accueil() {
         <div
           role="group"
           aria-label="Filtrer par catégorie"
-          className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+          className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] lg:mx-0 lg:mt-0 lg:px-0">
           {puces.map((c) => {
             const active = c.id === categorieId;
             return (
@@ -104,7 +121,7 @@ export default function Accueil() {
 
       {/* Accroche. Elle ne promet pas que « la totalite » de la participation
           va a l'association : la formulation reste a valider par l'UX. */}
-      <div className="mt-2 flex items-center gap-4 rounded-[1.75rem] bg-gradient-to-br from-primary to-[#b066e6] p-5 text-white shadow-lg shadow-primary/25">
+      <div className="mt-2 flex items-center gap-4 rounded-[1.75rem] lg:hidden bg-gradient-to-br from-primary to-[#b066e6] p-5 text-white shadow-lg shadow-primary/25">
         <div className="min-w-0 flex-1">
           <p className="font-titre text-[1.45rem] leading-tight font-semibold">1 objet, 1 don.</p>
           <p className="mt-1.5 text-[0.8rem] leading-5 text-white/90 text-pretty">
@@ -123,14 +140,14 @@ export default function Accueil() {
       </div>
 
       {/* scroll-mt : le titre reste visible sous l'en-tete collant. */}
-      <div ref={titreListe} className="mt-7 flex scroll-mt-36 items-baseline justify-between gap-3">
-        <h1 className="doneo-titre text-xl">Derniers objets ajoutés</h1>
+      <div ref={titreListe} className="mt-7 flex scroll-mt-36 items-baseline justify-between gap-3 lg:order-2 lg:mt-14 lg:mb-4 lg:scroll-mt-28">
+        <h2 className="doneo-titre text-xl lg:text-3xl">Derniers objets ajoutés</h2>
         <Link to="/recherche" className="text-sm font-semibold text-violet-fonce">
           Tout voir
         </Link>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 lg:order-4 lg:mt-2">
         {erreur && <ErreurChargement message={erreur} surReessayer={reessayer} />}
         {!erreur && !annonces && chargement && <ListeEnChargement />}
         {!erreur && annonces?.length === 0 && (
@@ -151,14 +168,18 @@ export default function Accueil() {
         {!erreur && annonces?.length > 0 && (
           <ul
             aria-busy={chargement}
-            className={`space-y-3 transition-opacity duration-200 ${chargement ? "opacity-50" : ""}`}>
+            className={`space-y-3 transition-opacity duration-200 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 ${chargement ? "opacity-50" : ""}`}>
             {annonces.map((a) => (
               <li key={a.id}>
-                <CarteAnnonce annonce={a} />
+                <CarteAnnonce annonce={a} grille />
               </li>
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="lg:order-5">
+        <CommentCaMarche />
       </div>
     </section>
   );

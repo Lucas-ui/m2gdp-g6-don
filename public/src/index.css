@@ -10,6 +10,8 @@
   /* Hauteur du menu du bas, encoche comprise. Les ecrans s'en servent pour
      se caler exactement au-dessus (marge de fin de page, carte plein ecran). */
   --hauteur-menu: calc(4.5rem + env(safe-area-inset-bottom));
+  /* Hauteur de la barre de navigation du grand ecran (EnTeteBureau). */
+  --hauteur-entete: 4.5rem;
 
   /* ---- Charte Doneo : valeurs exactes du brand book ------------------ */
   --violet: #9b4ddb; /* identite et actions */
@@ -58,6 +60,13 @@
   --border: #e8dbf6;
   --input: #e8dbf6;
   --ring: var(--violet);
+}
+
+/* Grand ecran : pas de menu du bas, la navigation passe en haut. */
+@media (min-width: 1024px) {
+  :root {
+    --hauteur-menu: 0px;
+  }
 }
 
 @theme inline {
@@ -230,4 +239,10 @@
    remontent au-dessus des coins arrondis du menu, qui recouvrent la carte. */
 .carte-doneo .leaflet-bottom {
   bottom: 1.75rem;
+}
+
+@media (min-width: 1024px) {
+  .carte-doneo .leaflet-bottom {
+    bottom: 0;
+  }
 }

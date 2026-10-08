@@ -4,7 +4,9 @@ import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
 import Champ from "@/components/Champ.jsx";
 import Logo from "@/components/Logo.jsx";
+import EnTeteBureau from "@/components/EnTeteBureau.jsx";
 import MenuBas from "@/components/MenuBas.jsx";
+import PanneauMarque from "@/components/PanneauMarque.jsx";
 import Connexion from "@/ecrans/Connexion.jsx";
 import Inscription from "@/ecrans/Inscription.jsx";
 import Accueil from "@/ecrans/Accueil.jsx";
@@ -25,10 +27,13 @@ import {
  * Coque des ecrans connectes : colonne mobile centree, menu du bas fixe.
  * La marge basse laisse le dernier element visible au-dessus du menu.
  */
-function CoqueConnectee() {
+function CoqueConnectee({ profil }) {
   return (
     <div className="doneo-coque">
-      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 pb-[calc(var(--hauteur-menu)+2rem)]">
+      <EnTeteBureau profil={profil} />
+      {/* Mobile : colonne etroite, menu du bas. Grand ecran : largeur d'un
+          site, barre de navigation en haut. */}
+      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 pb-[calc(var(--hauteur-menu)+2rem)] lg:min-h-[calc(100dvh-var(--hauteur-entete))] lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-16">
         <Outlet />
       </main>
       <MenuBas />
@@ -40,10 +45,11 @@ function CoqueConnectee() {
  * Coque des ecrans plein cadre (fiche d'annonce) : pas de marge, pas de menu
  * du bas — l'ecran porte sa propre barre d'action, comme sur la maquette.
  */
-function CoquePleinCadre() {
+function CoquePleinCadre({ profil }) {
   return (
     <div className="doneo-coque">
-      <main className="mx-auto min-h-dvh max-w-md">
+      <EnTeteBureau profil={profil} />
+      <main className="mx-auto min-h-dvh max-w-md lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-16">
         <Outlet />
       </main>
     </div>
@@ -179,7 +185,7 @@ export default function App() {
   } else {
     return (
       <Routes>
-        <Route element={<CoqueConnectee />}>
+        <Route element={<CoqueConnectee profil={profil} />}>
           <Route index element={<Accueil />} />
           <Route path="recherche" element={<Recherche />} />
           <Route
@@ -202,23 +208,26 @@ export default function App() {
           <Route path="membres" element={<Annuaire profil={profil} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
-        <Route element={<CoquePleinCadre />}>
+        <Route element={<CoquePleinCadre profil={profil} />}>
           <Route path="annonces/:id" element={<FicheAnnonce profil={profil} />} />
         </Route>
       </Routes>
     );
   }
 
+  // Grand ecran : panneau de la marque a gauche, formulaire a droite. Sur
+  // mobile, le formulaire seul, comme sur les maquettes.
   return (
-    <div className="doneo-coque">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-6 py-6 sm:px-8">
+    <div className="doneo-coque lg:grid lg:min-h-dvh lg:grid-cols-[1.1fr_1fr]">
+      <PanneauMarque />
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-6 sm:px-8 lg:justify-center lg:py-12">
         {avecEnTete && (
           <div className="mb-8">
             <Logo />
           </div>
         )}
 
-        <main className="flex flex-1 flex-col">
+        <main className="flex flex-1 flex-col lg:flex-none">
           {erreur && (
             <p
               role="alert"
