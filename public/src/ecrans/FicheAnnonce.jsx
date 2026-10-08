@@ -107,10 +107,13 @@ export default function FicheAnnonce({ profil }) {
     <article className="pb-36">
       <div className="relative">
         <ImageAnnonce annonce={annonce} className="h-72 w-full" />
-        <div className="absolute inset-x-0 top-0 flex justify-between p-4">
-          <BoutonSurPhoto onClick={revenir} aria-label="Retour">
-            <ChevronLeft className="size-5" aria-hidden="true" />
-          </BoutonSurPhoto>
+        {/* Fixe : le retour reste a portee quand on lit le bas de la fiche. */}
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md justify-between p-4">
+          <span className="pointer-events-auto">
+            <BoutonSurPhoto onClick={revenir} aria-label="Retour">
+              <ChevronLeft className="size-5" aria-hidden="true" />
+            </BoutonSurPhoto>
+          </span>
         </div>
       </div>
 

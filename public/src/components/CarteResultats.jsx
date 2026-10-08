@@ -127,7 +127,12 @@ export default function CarteResultats({ annonces }) {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(carte.current);
     calque.current = L.layerGroup().addTo(carte.current);
+    // Le conteneur change de taille (en-tete qui grandit, rotation) : Leaflet
+    // doit recalculer ses tuiles, sinon des bandes grises apparaissent.
+    const observateur = new ResizeObserver(() => carte.current?.invalidateSize());
+    observateur.observe(conteneur.current);
     return () => {
+      observateur.disconnect();
       carte.current.remove();
       carte.current = null;
     };
@@ -171,16 +176,17 @@ export default function CarteResultats({ annonces }) {
   }, [choisi]);
 
   return (
-    <div className="relative isolate -mx-5 overflow-hidden">
+    <div className="carte-doneo relative isolate h-full overflow-hidden">
       <div
         ref={conteneur}
         role="region"
         aria-label="Carte des objets"
-        className="z-0 h-[calc(100dvh-21rem)] min-h-72 w-full bg-menthe/40"
+        className="z-0 h-full w-full bg-menthe/40"
       />
 
+      {/* Apercu au-dessus des coins arrondis du menu, qui recouvrent le bas de la carte. */}
       {choisi && (
-        <div className="absolute inset-x-5 bottom-5 z-500">
+        <div className="absolute inset-x-4 bottom-11 z-500">
           <div className="doneo-carte flex gap-3.5 p-3">
             {choisi.annonces.length === 1 ? (
               <ApercuAnnonce annonce={choisi.annonces[0]} />

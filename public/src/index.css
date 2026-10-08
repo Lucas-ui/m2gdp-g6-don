@@ -7,6 +7,10 @@
 :root {
   --radius: 1.25rem;
 
+  /* Hauteur du menu du bas, encoche comprise. Les ecrans s'en servent pour
+     se caler exactement au-dessus (marge de fin de page, carte plein ecran). */
+  --hauteur-menu: calc(4.5rem + env(safe-area-inset-bottom));
+
   /* ---- Charte Doneo : valeurs exactes du brand book ------------------ */
   --violet: #9b4ddb; /* identite et actions */
   /* Declinaison foncee du violet de marque. Deux emplois :
@@ -220,4 +224,10 @@
     border-radius: 999px;
     background: var(--lavande);
   }
+}
+
+/* Carte des resultats : les controles du bas (mentions OpenStreetMap)
+   remontent au-dessus des coins arrondis du menu, qui recouvrent la carte. */
+.carte-doneo .leaflet-bottom {
+  bottom: 1.75rem;
 }

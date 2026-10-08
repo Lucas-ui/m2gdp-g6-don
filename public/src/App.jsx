@@ -28,7 +28,7 @@ import {
 function CoqueConnectee() {
   return (
     <div className="doneo-coque">
-      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 pb-32">
+      <main className="mx-auto min-h-dvh max-w-md px-5 pt-5 pb-[calc(var(--hauteur-menu)+2rem)]">
         <Outlet />
       </main>
       <MenuBas />
